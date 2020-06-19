@@ -1,0 +1,12 @@
+.addedLine {
+    background-color: #e6ffed;
+}
+.addedText {
+    background-color: #acf2bd;
+}
+.removedLine {
+    background-color: #ffeef0;
+}
+.removedText {
+    background-color: #fdb8c0;
+}

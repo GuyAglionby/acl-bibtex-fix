@@ -10,3 +10,7 @@
 .removedText {
     background-color: #fdb8c0;
 }
+
+div.result span {
+    white-space: pre-wrap;
+}

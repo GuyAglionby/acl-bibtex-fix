@@ -23,11 +23,17 @@ const simplifyRegex = /[A-Za-z0-9]+/g;
 const removeChars = ['\\', '{', '}', '$'];
 const diacriticRegex = /[\u0300-\u036f]/g;
 
-// Github colours 
-const removedLineClass = 'removedLine'
-const removedTextClass = 'removedText'
-const addedLineClass = 'addedLine'
-const addedTextClass = 'addedText'
+// Github colours
+const diffClasses = {
+    'removed': {
+        'bg': 'removedLine',
+        'text': 'removedText'
+    },
+    'added': {
+        'bg': 'addedLine',
+        'text': 'addedText'
+    }
+};
 
 
 function simplifyTitle(title) {
@@ -130,57 +136,90 @@ function br() {
     return b
 }
 
+function makeDiffLineElem(diff, prop) {
+    let origE = document.createElement('span');
+    diff.forEach((part) => {
+        if (!part.added && !part.removed) {
+            origE.appendChild(spanWithText(part.value));
+        } else if (part[prop]) {
+            origE.appendChild(spanWithText(part.value, diffClasses[prop]['text']));
+        }
+    });
+    origE.className += diffClasses[prop]['bg'];
+    return origE
+}
+
+function doDiffLine(origLine, modLine, parentElem) {
+    let diff = Diff.diffWords(origLine, modLine);
+    parentElem.appendChild(makeDiffLineElem(diff, 'removed')) 
+    parentElem.appendChild(br());
+    parentElem.appendChild(makeDiffLineElem(diff, 'added'))
+    parentElem.appendChild(br());
+}
+
 /*
  * Modified from original by Nick Bailey (2017)
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
  */
 function toDiffedBibtex(orig, modified) {
     let parentElem = document.createElement('div')
+    parentElem.className += 'result'
     var diff = Diff.diffJson(orig, modified)
-   /* console.log('orig')
-    console.log(orig)
-    console.log('modified')
-    console.log(modified)
-    console.log('diff')
-    console.log(diff)
-    console.log('end diff')*/
-    var out = ''; 
     const entrysep = ',';
     const entrysepL = ',\n';
-    const indent = '    ';
+    const indent = '        ';
 
-    console.log(orig)
     if (modified.entryType == orig.entryType) {
         parentElem.appendChild(spanWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
     } else {
-        let origDiffLine = diffedSpan("@", orig.entryType, "{" + modified.citationKey + entrysep, removedTextClass, removedLineClass)
-        let modifiedDiffLine = diffedSpan("@", modified.entryType, "{" + modified.citationKey + entrysep, addedTextClass, addedLineClass)
-        console.log(origDiffLine);
-        console.log(modifiedDiffLine);
-        parentElem.appendChild(origDiffLine);
+        let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
+        let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
+        doDiffLine(origLine, modLine, parentElem);
+    }
+
+    if (modified.entry) {
+        parentElem.appendChild(spanWithText(modified.entry));
         parentElem.appendChild(br());
-        parentElem.appendChild(modifiedDiffLine);
     }
-    return parentElem
-    /*out += '{';
-    if (modified.citationKey)
-        out += modified.citationKey + entrysep;
 
-    if (modified.entry)
-        out += modified.entry ;
-    if (modified.entryTags) {
-        var tags = indent;
-        for (var jdx in modified.entryTags) {
-            if (tags.trim().length != 0)
-                tags += entrysep + indent;
-            tags += jdx + ' = {' + 
-                    modified.entryTags[jdx] + '}';
+    let modIdx = 0;
+    let origIdx = 0;
+    let tagSeq = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
+    var tags = indent;
+    let numFieldsAdded = 0;
+    for (let field of tagSeq) {
+        let shouldComma = tagSeq.length != numFieldsAdded + 1;
+        tags += field + ' = {' + modified.entryTags[field] + '}';
+        if (field in modified.entryTags && field in orig.entryTags) {
+            let modEntry = modified.entryTags[field];
+            let origEntry = orig.entryTags[field];
+            if (modEntry == origEntry) {
+                let addedText = indent + field + ' = {' + modEntry + '}';
+                addedText += shouldComma ? ',' : '';
+                parentElem.appendChild(spanWithText(addedText))
+                parentElem.appendChild(br());
+            } else {
+                let modAdded = indent + field + ' = {' + modEntry;
+                modAdded += shouldComma ? ',' : '';
+                let origAdded = indent + field + ' = {' + origEntry;
+                origAdded += shouldComma ? ',' : '';
+                doDiffLine(origAdded, modAdded, parentElem);
+            }
+        } else if (field in modified.entryTags){ 
+            let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
+            addedText += shouldComma ? ',' : '';
+            parentElem.appendChild(spanWithText(addedText, diffClasses['added']['bg']));
+            parentElem.appendChild(br());
+        } else {
+            let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
+            addedText += shouldComma ? ',' : '';
+            parentElem.appendChild(spanWithText(addedText, diffClasses['removed']['bg']));
+            parentElem.appendChild(br());
         }
-        out += tags;
+        numFieldsAdded += 1;
     }
-    out += '\n}';
-    return out;*/
-
+    parentElem.appendChild(spanWithText('}'))
+    return parentElem;
 };
 function generateBibtexFromConversions(changedEntries) {
     

@@ -1,9 +1,12 @@
 // Hello, welcome to the jungle
 var convertButton;
+var downloadButton;
 var resultsArea;
 
+var bibtexFilename;
 var bibtexContent;
 var bibtexParsed;
+var translatedEntries;
 
 var reverseMapping;
 var anthology;
@@ -11,10 +14,12 @@ var anthology;
 window.onload = function() {
     // inputElement = document.getElementById('bibtex-upload');
     convertButton = document.getElementById('do-conversion-button');
+    downloadButton = document.getElementById('download-button');
     resultsArea = document.getElementById('results-area');
     let noJsElem = document.getElementById('no-js');
     noJsElem.parentNode.removeChild(noJsElem);
     convertButton.disabled = true;
+    downloadButton.disabled = true;
     getReverseMapping(); // technically a race here, but shouldn't be an issue
     loadAnthology();
 }
@@ -35,6 +40,40 @@ const diffClasses = {
     }
 };
 
+name_types = ['first', 'middle', 'last', 'prelast', 'lineage']
+
+function inputElementOnChange(elem) { 
+    // https://stackoverflow.com/questions/16215771/how-open-select-file-dialog-via-js/16215950
+    convertButton.disabled = true;
+    let file = elem.files[0];
+    bibtexFilename = file.name;
+    let reader = new FileReader();
+    reader.readAsText(file, 'UTF-8');
+    reader.onload = readerEvent => {
+        bibtexContent = readerEvent.target.result;
+        bibtexParsed = bibtexParse.toJSON(bibtexContent);
+        convertButton.disabled = false;
+    }
+}
+
+function download() {
+    let bibtexString = toBibtex(translatedEntries, false);
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(bibtexString));
+    let downloadFilename = bibtexFilename.substring(0, bibtexFilename.length - '.bib'.length); 
+    downloadFilename += '-acl-fixed.bib'
+    element.setAttribute('download', downloadFilename);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+
+    element.click();
+
+    document.body.removeChild(element);
+}
+
+// ########################################## 
+// # Bibtex matching and conversion 
+// ########################################## 
 
 function simplifyTitle(title) {
     for (let toRemove of removeChars) {
@@ -48,28 +87,9 @@ function simplifyTitle(title) {
     return [...title.matchAll(simplifyRegex)].join(' ')
 }
 
-name_types = ['first', 'middle', 'last', 'prelast', 'lineage']
-
-function inputElementOnChange(elem) { 
-    // https://stackoverflow.com/questions/16215771/how-open-select-file-dialog-via-js/16215950
-    convertButton.disabled = true;
-    let file = elem.files[0];
-    let reader = new FileReader();
-    reader.readAsText(file, 'UTF-8');
-    reader.onload = readerEvent => {
-        bibtexContent = readerEvent.target.result;
-        bibtexParsed = bibtexParse.toJSON(bibtexContent);
-        convertButton.disabled = false;
-    }
-}
-
-// ########################################## 
-// # Bibtex matching and conversion 
-// ########################################## 
-
 function convert() {
-    let changedKeys = [];
-    let changedEntries = bibtexParsed.map(entry => {
+    downloadButton.disabled = true;
+    translatedEntries = bibtexParsed.map(entry => {
         let strippedTitle = simplifyTitle(entry['entryTags']['title']);
         if (strippedTitle in anthology) {
             let newEntry = JSON.parse(JSON.stringify(entry));
@@ -101,13 +121,15 @@ function convert() {
             } else if ("date" in anthEntry) {
                 newEntry.entryTags.date = anthEntry.date
             } else{
-                console.warn("No date info available for title :"+strippedTitle);
+                console.warn("No date info available for title :" + strippedTitle);
             }
-            changedKeys.push(newEntry.citationKey);
-            let thisDiffElement = toDiffedBibtex(entry, newEntry)
-            resultsArea.appendChild(thisDiffElement);
+            resultsArea.appendChild(toDiffedBibtex(entry, newEntry));
+            return newEntry;
+        } else {
+            return entry;
         }
-    }).filter(entry => !!entry);
+    });
+    downloadButton.disabled = false;
 }
 
 // ########################################## 
@@ -121,7 +143,6 @@ function convert() {
 function toDiffedBibtex(orig, modified) {
     let parentElem = document.createElement('table')
     parentElem.className += 'result'
-//    var diff = Diff.diffJson(orig, modified)
     const entrysep = ',';
     const indent = '        ';
 
@@ -186,6 +207,44 @@ function toDiffedBibtex(orig, modified) {
     parentElem.appendChild(rowWithText('}'))
     return parentElem;
 }
+
+/*
+ * Original by Nick Bailey (2017)
+ * (cdn version isn't complete)
+ * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
+ */
+function toBibtex(json, compact) {
+    if (compact === undefined) compact = true;
+    var out = '';
+    
+    var entrysep = ',';
+    var indent = '';
+    if (!compact) {
+                  entrysep = ',\n';
+                  indent = '    ';        
+    }
+    for ( var i in json) {
+        out += "@" + json[i].entryType;
+        out += '{';
+        if (json[i].citationKey)
+            out += json[i].citationKey + entrysep;
+        if (json[i].entry)
+            out += json[i].entry ;
+        if (json[i].entryTags) {
+            var tags = indent;
+            for (var jdx in json[i].entryTags) {
+                if (tags.trim().length != 0)
+                    tags += entrysep + indent;
+                tags += jdx + (compact ? '={' : ' = {') + 
+                        json[i].entryTags[jdx] + '}';
+            }
+            out += tags;
+        }
+        out += compact ? '}\n' : '\n}\n\n';
+    }
+    return out;
+
+};
 
 // ########################################## 
 // # Helper functions for rendering diffs 

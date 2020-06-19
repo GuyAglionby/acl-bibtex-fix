@@ -11,6 +11,6 @@
     background-color: #fdb8c0;
 }
 
-div.result span {
+table.result span {
     white-space: pre-wrap;
 }

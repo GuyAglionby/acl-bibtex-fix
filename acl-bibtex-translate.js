@@ -130,6 +130,21 @@ function spanWithText(text, clazz) {
     return s;
 }
 
+function rowWithText(text, clazz) {
+    return rowWithElem(spanWithText(text), clazz);
+}
+
+function rowWithElem(elem, clazz) {
+    let r = document.createElement('tr')
+    let d = document.createElement('td')
+    r.appendChild(d)
+    d.appendChild(elem)
+    if (!!clazz) {
+        r.className += clazz;
+    }
+    return r;
+}
+
 function br() {
     let b = document.createElement('br')
     b.className += "code-br";
@@ -145,16 +160,13 @@ function makeDiffLineElem(diff, prop) {
             origE.appendChild(spanWithText(part.value, diffClasses[prop]['text']));
         }
     });
-    origE.className += diffClasses[prop]['bg'];
-    return origE
+    return rowWithElem(origE, diffClasses[prop]['bg']);
 }
 
 function doDiffLine(origLine, modLine, parentElem) {
     let diff = Diff.diffWords(origLine, modLine);
     parentElem.appendChild(makeDiffLineElem(diff, 'removed')) 
-    parentElem.appendChild(br());
     parentElem.appendChild(makeDiffLineElem(diff, 'added'))
-    parentElem.appendChild(br());
 }
 
 /*
@@ -162,7 +174,7 @@ function doDiffLine(origLine, modLine, parentElem) {
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
  */
 function toDiffedBibtex(orig, modified) {
-    let parentElem = document.createElement('div')
+    let parentElem = document.createElement('table')
     parentElem.className += 'result'
     var diff = Diff.diffJson(orig, modified)
     const entrysep = ',';
@@ -170,7 +182,7 @@ function toDiffedBibtex(orig, modified) {
     const indent = '        ';
 
     if (modified.entryType == orig.entryType) {
-        parentElem.appendChild(spanWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
+        parentElem.appendChild(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
     } else {
         let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
         let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
@@ -178,8 +190,7 @@ function toDiffedBibtex(orig, modified) {
     }
 
     if (modified.entry) {
-        parentElem.appendChild(spanWithText(modified.entry));
-        parentElem.appendChild(br());
+        parentElem.appendChild(rowWithText(modified.entry));
     }
 
     let modIdx = 0;
@@ -196,8 +207,7 @@ function toDiffedBibtex(orig, modified) {
             if (modEntry == origEntry) {
                 let addedText = indent + field + ' = {' + modEntry + '}';
                 addedText += shouldComma ? ',' : '';
-                parentElem.appendChild(spanWithText(addedText))
-                parentElem.appendChild(br());
+                parentElem.appendChild(rowWithText(addedText))
             } else {
                 let modAdded = indent + field + ' = {' + modEntry;
                 modAdded += shouldComma ? ',' : '';
@@ -208,17 +218,15 @@ function toDiffedBibtex(orig, modified) {
         } else if (field in modified.entryTags){ 
             let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            parentElem.appendChild(spanWithText(addedText, diffClasses['added']['bg']));
-            parentElem.appendChild(br());
+            parentElem.appendChild(rowWithText(addedText, diffClasses['added']['bg']));
         } else {
             let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            parentElem.appendChild(spanWithText(addedText, diffClasses['removed']['bg']));
-            parentElem.appendChild(br());
+            parentElem.appendChild(rowWithText(addedText, diffClasses['removed']['bg']));
         }
         numFieldsAdded += 1;
     }
-    parentElem.appendChild(spanWithText('}'))
+    parentElem.appendChild(rowWithText('}'))
     return parentElem;
 };
 function generateBibtexFromConversions(changedEntries) {

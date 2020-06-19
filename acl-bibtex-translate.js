@@ -63,6 +63,10 @@ function inputElementOnChange(elem) {
     }
 }
 
+// ########################################## 
+// # Bibtex matching and conversion 
+// ########################################## 
+
 function convert() {
     let changedKeys = [];
     let changedEntries = bibtexParsed.map(entry => {
@@ -99,18 +103,93 @@ function convert() {
             } else{
                 console.warn("No date info available for title :"+strippedTitle);
             }
-//            console.log(bibtexParse.toBibtex([newEntry], false))
-            //return {'key': newEntry.citationKey, 'new': bibtexParse.toBibtex([newEntry])};
             changedKeys.push(newEntry.citationKey);
             let thisDiffElement = toDiffedBibtex(entry, newEntry)
             resultsArea.appendChild(thisDiffElement);
-//            return (entry, newEntry);
         }
     }).filter(entry => !!entry);
-//    console.log(bibtexParse.toBibtex(changedEntries, false));
-//    console.log('\n\n\n\n')
-//    console.log(bibtexContent);
 }
+
+// ########################################## 
+// # Render diffs 
+// ########################################## 
+
+/*
+ * Modified from original by Nick Bailey (2017)
+ * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
+ */
+function toDiffedBibtex(orig, modified) {
+    let parentElem = document.createElement('table')
+    parentElem.className += 'result'
+//    var diff = Diff.diffJson(orig, modified)
+    const entrysep = ',';
+    const indent = '        ';
+
+    if (modified.entryType == orig.entryType) {
+        parentElem.appendChild(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
+    } else {
+        let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
+        let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
+        doDiffLine(origLine, modLine, parentElem);
+    }
+
+    if (modified.entry) {
+        parentElem.appendChild(rowWithText(modified.entry));
+    }
+
+    let modIdx = 0;
+    let origIdx = 0;
+    // Order that we should have the fields in when rendering the bibtex
+    let tagSeq = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
+    // This is really just for aesthetics
+    if (tagSeq.includes('date') && tagSeq.includes('month') && tagSeq.includes('year')) {
+        tagSeq = tagSeq.filter(tag => tag != 'year' && tag != 'month');
+        let dateIndex = tagSeq.indexOf('date') + 1;
+        tagSeq.splice(dateIndex, 0, 'year')
+        tagSeq.splice(dateIndex, 0, 'month')
+    }
+    if (tagSeq.includes('booktitle') && tagSeq.includes('journaltitle')) {
+        let first = tagSeq.indexOf('booktitle') < tagSeq.indexOf('journaltitle') ? 'booktitle' : 'journaltitle';
+        let second = first == 'booktitle' ? 'journaltitle' : 'booktitle';
+        tagSeq = tagSeq.filter(tag => tag != second);
+        let dateIndex = tagSeq.indexOf(first) + 1;
+        tagSeq.splice(dateIndex, 0, second)
+    }
+    let numFieldsAdded = 0;
+    for (let field of tagSeq) {
+        let shouldComma = tagSeq.length != numFieldsAdded + 1;
+        if (field in modified.entryTags && field in orig.entryTags) {
+            let modEntry = modified.entryTags[field];
+            let origEntry = orig.entryTags[field];
+            if (modEntry == origEntry) {
+                let addedText = indent + field + ' = {' + modEntry + '}';
+                addedText += shouldComma ? ',' : '';
+                parentElem.appendChild(rowWithText(addedText))
+            } else {
+                let modAdded = indent + field + ' = {' + modEntry;
+                modAdded += shouldComma ? ',' : '';
+                let origAdded = indent + field + ' = {' + origEntry;
+                origAdded += shouldComma ? ',' : '';
+                doDiffLine(origAdded, modAdded, parentElem);
+            }
+        } else if (field in modified.entryTags){ 
+            let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
+            addedText += shouldComma ? ',' : '';
+            parentElem.appendChild(rowWithText(addedText, diffClasses['added']['bg']));
+        } else {
+            let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
+            addedText += shouldComma ? ',' : '';
+            parentElem.appendChild(rowWithText(addedText, diffClasses['removed']['bg']));
+        }
+        numFieldsAdded += 1;
+    }
+    parentElem.appendChild(rowWithText('}'))
+    return parentElem;
+}
+
+// ########################################## 
+// # Helper functions for rendering diffs 
+// ########################################## 
 
 function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
     let parentSpan = document.createElement('span');
@@ -145,12 +224,6 @@ function rowWithElem(elem, clazz) {
     return r;
 }
 
-function br() {
-    let b = document.createElement('br')
-    b.className += "code-br";
-    return b
-}
-
 function makeDiffLineElem(diff, prop) {
     let origE = document.createElement('span');
     diff.forEach((part) => {
@@ -169,69 +242,9 @@ function doDiffLine(origLine, modLine, parentElem) {
     parentElem.appendChild(makeDiffLineElem(diff, 'added'))
 }
 
-/*
- * Modified from original by Nick Bailey (2017)
- * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
- */
-function toDiffedBibtex(orig, modified) {
-    let parentElem = document.createElement('table')
-    parentElem.className += 'result'
-    var diff = Diff.diffJson(orig, modified)
-    const entrysep = ',';
-    const entrysepL = ',\n';
-    const indent = '        ';
-
-    if (modified.entryType == orig.entryType) {
-        parentElem.appendChild(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
-    } else {
-        let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
-        let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
-        doDiffLine(origLine, modLine, parentElem);
-    }
-
-    if (modified.entry) {
-        parentElem.appendChild(rowWithText(modified.entry));
-    }
-
-    let modIdx = 0;
-    let origIdx = 0;
-    let tagSeq = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
-    var tags = indent;
-    let numFieldsAdded = 0;
-    for (let field of tagSeq) {
-        let shouldComma = tagSeq.length != numFieldsAdded + 1;
-        tags += field + ' = {' + modified.entryTags[field] + '}';
-        if (field in modified.entryTags && field in orig.entryTags) {
-            let modEntry = modified.entryTags[field];
-            let origEntry = orig.entryTags[field];
-            if (modEntry == origEntry) {
-                let addedText = indent + field + ' = {' + modEntry + '}';
-                addedText += shouldComma ? ',' : '';
-                parentElem.appendChild(rowWithText(addedText))
-            } else {
-                let modAdded = indent + field + ' = {' + modEntry;
-                modAdded += shouldComma ? ',' : '';
-                let origAdded = indent + field + ' = {' + origEntry;
-                origAdded += shouldComma ? ',' : '';
-                doDiffLine(origAdded, modAdded, parentElem);
-            }
-        } else if (field in modified.entryTags){ 
-            let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
-            addedText += shouldComma ? ',' : '';
-            parentElem.appendChild(rowWithText(addedText, diffClasses['added']['bg']));
-        } else {
-            let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
-            addedText += shouldComma ? ',' : '';
-            parentElem.appendChild(rowWithText(addedText, diffClasses['removed']['bg']));
-        }
-        numFieldsAdded += 1;
-    }
-    parentElem.appendChild(rowWithText('}'))
-    return parentElem;
-};
-function generateBibtexFromConversions(changedEntries) {
-    
-}
+// ########################################## 
+// # Loading stuff from server
+// ########################################## 
 
 function loadJsonGz(file, callback) {
     fetch(file)
@@ -243,11 +256,6 @@ function loadJsonGz(file, callback) {
 }
 
 function getReverseMapping() {
-  /*  fetch('./reverseMappingTable.json.gz')
-        .then(response => response.arrayBuffer())
-        .then(response => pako.inflate(response))
-        .then(response => new TextDecoder("ascii").decode(response))
-        .then(response => saveReverseMapping(response));*/
     loadJsonGz('./reverseMappingTable.json.gz', saveReverseMapping);
 }
 
@@ -257,11 +265,6 @@ function saveReverseMapping(mapping) {
 
 function loadAnthology() {
     loadJsonGz('./anthology_data.json.gz', saveAnthology);
-    /*fetch('./anthology_data.json.gz')
-        .then(response => response.arrayBuffer())
-        .then(response => pako.inflate(response))
-        .then(response => new TextDecoder("ascii").decode(response))
-        .then(saveAnthology);*/
 }
 
 function saveAnthology(anth) {

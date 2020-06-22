@@ -102,16 +102,21 @@ function convert() {
             }
             newEntry.entryType = anthEntry.bibType
             newEntry.entryTags.title = anthEntry.title
-            newEntry.entryTags.doi = anthEntry.doi
             newEntry.entryTags.pages = anthEntry.pages
-            newEntry.entryTags.publisher = anthEntry.publisher
             if (anthEntry.bibType == 'inproceedings') {
                 newEntry.entryTags.booktitle = anthEntry.booktitle
             }
+            for (let possTag of ["doi", "pages", "publisher"] {
+                if (possTag in anthEntry) {
+                    newEntry.entryTags[possTag] = anthEntry[possTag];
+                }
+            }
             if ("url" in anthEntry) {
                 newEntry.entryTags.url = anthEntry.url;
-            } else{
-                delete newEntry.entryTags.url;
+            } else {
+                if ('arxiv' in newEntry.entryTags.url.toLowerCase()) {
+                    delete newEntry.entryTags.url;
+                }
             }
             delete newEntry.entryTags.urldate;
             if ("month" in anthEntry) {

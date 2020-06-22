@@ -47,12 +47,17 @@ const dateFormats = [
     "YYYY-MM-DD",
     "MM-YYYY",
     "MMM-YYYY",
-    "MMMM-YYYY"
+    "MMMM-YYYY",
     "YYYY-MM",
     "YYYY-MMM",
     "YYYY-MMMM",
 ];
 
+const monthFormats = [
+    "MM",
+    "MMM",
+    "MMMM"
+]
 
 function inputElementOnChange(elem) { 
     // https://stackoverflow.com/questions/16215771/how-open-select-file-dialog-via-js/16215950
@@ -87,6 +92,18 @@ function download() {
 // # Bibtex matching and conversion 
 // ########################################## 
 
+function matchDate(dateString, formats) {
+    let existingDate;
+    for (let dateFormat of formats) {
+        existingDate = moment(dateString, dateFormat);
+        if (existingDate.isValid()) {
+            break;
+        }
+    }
+    return existingDate;
+}
+
+
 function simplifyTitle(title) {
     for (let toRemove of removeChars) {
         title = title.replaceAll(toRemove, '');
@@ -118,7 +135,7 @@ function convert() {
             if (anthEntry.bibType == 'inproceedings') {
                 newEntry.entryTags.booktitle = anthEntry.booktitle
             }
-            for (let possTag of ["doi", "pages", "publisher"] {
+            for (let possTag of ["doi", "pages", "publisher"]) {
                 if (possTag in anthEntry) {
                     newEntry.entryTags[possTag] = anthEntry[possTag];
                 }
@@ -133,16 +150,11 @@ function convert() {
             delete newEntry.entryTags.urldate;
             if ("month" in anthEntry) {
                 if ("date" in newEntry.entryTags) {
-                    let existingDate;
-                    for (let dateFormat of dateFormats) {
-                        existingDate = moment(newEntry.entryTags.date, dateFormat);
-                        if (existingDate.isValid()) {
-                            break;
-                        }
-                    }
-                    if (existingDate.isValid()) {
+                    let existingDate = matchDate(newEntry.entryTags.date, dateFormats);
+                    let anthMonth = matchDate(anthEntry.month, monthFormats)
+                    if (existingDate.isValid() && anthMonth.isValid()) {
                         // Only change existing dates if they're wrong (don't change format just for the sake of it)
-                        if (existingDate.year() != anthEntry.year || existingDate.month() + 1 != anthEntry.month) {
+                        if (existingDate.year() != anthEntry.year || existingDate.month()  != anthMonth.month()) {
                             delete newEntry.entryTags.date;
                             newEntry.entryTags.month = anthEntry.month;
                             newEntry.entryTags.year = anthEntry.year;

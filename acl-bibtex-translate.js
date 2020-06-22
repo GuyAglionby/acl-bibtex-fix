@@ -226,6 +226,11 @@ function toDiffedBibtex(orig, modified) {
         let dateIndex = tagSeq.indexOf(first) + 1;
         tagSeq.splice(dateIndex, 0, second)
     }
+    if (tagSeq.includes('booktitle') && tagSeq.includes('publisher')) {
+        tagSeq = tagSeq.filter(tag => tag != 'publisher');
+        let dateIndex = tagSeq.indexOf('booktitle') + 1;
+        tagSeq.splice(dateIndex, 0, 'publisher')
+    }
     let numFieldsAdded = 0;
     for (let field of tagSeq) {
         let shouldComma = tagSeq.length != numFieldsAdded + 1;

@@ -42,6 +42,18 @@ const diffClasses = {
 
 name_types = ['first', 'middle', 'last', 'prelast', 'lineage']
 
+// date formats
+const dateFormats = [
+    "YYYY-MM-DD",
+    "MM-YYYY",
+    "MMM-YYYY",
+    "MMMM-YYYY"
+    "YYYY-MM",
+    "YYYY-MMM",
+    "YYYY-MMMM",
+];
+
+
 function inputElementOnChange(elem) { 
     // https://stackoverflow.com/questions/16215771/how-open-select-file-dialog-via-js/16215950
     convertButton.disabled = true;
@@ -120,9 +132,30 @@ function convert() {
             }
             delete newEntry.entryTags.urldate;
             if ("month" in anthEntry) {
-                delete newEntry.entryTags.date;
-                newEntry.entryTags.month = anthEntry.month
-                newEntry.entryTags.year = anthEntry.year;
+                if ("date" in newEntry.entryTags) {
+                    let existingDate;
+                    for (let dateFormat of dateFormats) {
+                        existingDate = moment(newEntry.entryTags.date, dateFormat);
+                        if (existingDate.isValid()) {
+                            break;
+                        }
+                    }
+                    if (existingDate.isValid()) {
+                        // Only change existing dates if they're wrong (don't change format just for the sake of it)
+                        if (existingDate.year() != anthEntry.year || existingDate.month() + 1 != anthEntry.month) {
+                            delete newEntry.entryTags.date;
+                            newEntry.entryTags.month = anthEntry.month;
+                            newEntry.entryTags.year = anthEntry.year;
+                        }
+                    } else {
+                        delete newEntry.entryTags.date;
+                        newEntry.entryTags.month = anthEntry.month;
+                        newEntry.entryTags.year = anthEntry.year;
+                    }
+                } else {
+                    newEntry.entryTags.month = anthEntry.month;
+                    newEntry.entryTags.year = anthEntry.year;
+                }
             } else if ("date" in anthEntry) {
                 newEntry.entryTags.date = anthEntry.date
             } else{

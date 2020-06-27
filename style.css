@@ -17,6 +17,14 @@ table.result span {
 
 table.result {
     border: 1px solid gray;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.changeIofN {
+    font-weight: bold;
+    padding-left: 50px;
+    font-size: 18px;
 }
 
 #mainContent { 
@@ -33,11 +41,7 @@ table.result {
     margin: auto;
 }
 
-#results-area {
-    font-family: monospace;
-    font-size: 14px;
-}
-
 #upload-form { 
     margin-bottom: 15px;
 }
+

@@ -179,13 +179,20 @@ function convert() {
             } else{
                 console.warn("No date info available for title :" + strippedTitle);
             }
-            resultsArea.appendChild(toDiffedBibtex(entry, newEntry));
             numChanges += 1;
             return newEntry;
         } else {
             return entry;
         }
     });
+
+    let ithChange = 1;
+    for (let i = 0; i < translatedEntries.length; i++) {
+        if (bibtexParsed[i] != translatedEntries[i]) {
+            resultsArea.append(changeIofN(ithChange, numChanges));
+            resultsArea.appendChild(toDiffedBibtex(bibtexParsed[i], translatedEntries[i]));
+        }
+    }
 
     if (numChanges > 0) {
         $(".download-button").css({'display': ''});
@@ -316,6 +323,17 @@ function toBibtex(json, compact) {
         out += compact ? '}\n' : '\n}\n\n';
     }
     return out;
+}
+
+// ########################################## 
+// # Helper functions for random text 
+// ########################################## 
+
+function changeIofN(i, n) {
+    let s = document.createElement('p');
+    s.className += 'changeIofN'
+    s.innerText = 'Change ' + i + '/' + n;
+    return s;
 }
 
 // ########################################## 

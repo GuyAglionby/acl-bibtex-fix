@@ -1,6 +1,5 @@
 // Hello, welcome to the jungle
 var convertButton;
-var downloadButton;
 var resultsArea;
 
 var bibtexFilename;
@@ -11,15 +10,19 @@ var translatedEntries;
 var reverseMapping;
 var anthology;
 
+
 window.onload = function() {
-    // inputElement = document.getElementById('bibtex-upload');
-    convertButton = document.getElementById('do-conversion-button');
-    downloadButton = document.getElementById('download-button');
-    resultsArea = document.getElementById('results-area');
+    // https://www.w3schools.com/bootstrap4/bootstrap_forms_custom.asp
+    $(".custom-file-input").on("change", function() {
+      var fileName = $(this).val().split("\\").pop();
+      $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+    });
     let noJsElem = document.getElementById('no-js');
     noJsElem.parentNode.removeChild(noJsElem);
-    convertButton.disabled = true;
-    downloadButton.disabled = true;
+    inputElement = document.getElementById('bibtex-upload');
+    convertButton = document.getElementById('do-conversion-button');
+    resultsArea = document.getElementById('results-area');
+
     getReverseMapping(); // technically a race here, but shouldn't be an issue
     loadAnthology();
 }
@@ -117,7 +120,10 @@ function simplifyTitle(title) {
 }
 
 function convert() {
-    downloadButton.disabled = true;
+    resultsArea.innerHTML = '';
+    $(".download-button").css({'display': 'none'});
+    resultsArea.appendChild(document.createElement('hr'));
+    let numChanges = 0;
     translatedEntries = bibtexParsed.map(entry => {
         let strippedTitle = simplifyTitle(entry['entryTags']['title']);
         if (strippedTitle in anthology) {
@@ -174,12 +180,21 @@ function convert() {
                 console.warn("No date info available for title :" + strippedTitle);
             }
             resultsArea.appendChild(toDiffedBibtex(entry, newEntry));
+            numChanges += 1;
             return newEntry;
         } else {
             return entry;
         }
     });
-    downloadButton.disabled = false;
+
+    if (numChanges > 0) {
+        $(".download-button").css({'display': ''});
+    } else {
+        let noResultsElem = document.createElement('p');
+        noResultsElem.textContent('No changes found!');
+        resultsArea.appendChild(noResultsElem);
+    }
+    resultsArea.appendChild(document.createElement('hr'));
 }
 
 // ########################################## 
@@ -192,7 +207,7 @@ function convert() {
  */
 function toDiffedBibtex(orig, modified) {
     let parentElem = document.createElement('table');
-    parentElem.className += 'result';
+    parentElem.className += 'result col-lg-10 offset-lg-1 '
     const entrysep = ',';
     const indent = '        ';
 

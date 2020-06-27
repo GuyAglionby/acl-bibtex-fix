@@ -14,3 +14,30 @@
 table.result span {
     white-space: pre-wrap;
 }
+
+table.result {
+    border: 1px solid gray;
+}
+
+#mainContent { 
+    top: 40px;
+    position: relative;
+    padding-top: 15px;
+    padding-bottom: 20px;
+}
+
+#do-conversion-button {
+    display: block;
+    line-height: 2;
+    width: 33%;
+    margin: auto;
+}
+
+#results-area {
+    font-family: monospace;
+    font-size: 14px;
+}
+
+#upload-form { 
+    margin-bottom: 15px;
+}

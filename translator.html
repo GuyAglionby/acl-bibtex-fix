@@ -1,24 +1,52 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
     <head>
         <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
         <meta content="utf-8" http-equiv="encoding">
-        <title>BibTeX Upload</title>>
+        <title>BibTeX Upload</title>
+        <!-- Style + bootstrap -->
         <link rel="stylesheet" href="style.css" />
-        <script src="reverseMappingTable.js" type="text/javascript"></script>
-        <script src="acl-bibtex-translate.js" type="text/javascript"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <!-- CDN -->
         <script src="https://cdn.jsdelivr.net/npm/pako@1.0.11/dist/pako.min.js" type="text/javascript"></script>
         <script src="https://cdn.jsdelivr.net/npm/bibtex-parse-js@0.0.24/bibtexParse.min.js" type="text/javascript"></script>
         <script src="https://cdn.jsdelivr.net/npm/diff@4.0.2/dist/diff.min.js" integrity="sha256-xofEpXTFTnsOK+GIsjgJc1ZN0kSE3KsTtZJ2GQaWs3I=" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/xregexp@3.2.0/xregexp-all.min.js" type="text/javascript"></script>
         <script src="https://cdn.jsdelivr.net/npm/moment@2.27.0/moment.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+        <!-- My scripts -->
+        <script src="reverseMappingTable.js" type="text/javascript"></script>
+        <script src="acl-bibtex-translate.js" type="text/javascript"></script>
     </head>
     <body>
-        <span id="no-js">Please enable Javascript!</span>
-        Upload your bibtex here:
-        <input type="file" name="bibtex-upload" id="bibtex-upload" onchange="inputElementOnChange(this)" accept=".bib" autocomplete="off"/>
-        <button id="do-conversion-button" onclick="convert()" disabled>Convert!</button>
+        <div class="container-fluid">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-sm-10 rounded shadow-lg bg-light" id="mainContent">
+                    <h1>ACL Bibliography Fix-up</h1>
+                    <div class="alert alert-danger" id="no-js" role="alert">
+                        <h2 id="no-jss" class="text-danger">Please enable Javascript!</span>
+                    </div>
 
-        <div id="results-area"></div>
-        <button id="download-button" onclick="download()" disabled>Download results</button>
+                    <p>
+                        Here is some inspiring text about how you should fix your bibliographies.
+                    </p>
+                    <p>
+                        Upload your bibtex here:
+                        <form id="upload-form">
+                            <div class="custom-file col-lg-8 col-12 offset-lg-2 col-sm-10 offset-sm-1">
+                                <input type="file" name="bibtex-upload" id="bibtex-upload" class="custom-file-input" onchange="inputElementOnChange(this)" accept=".bib" autocomplete="off">
+                                <label class="custom-file-label" for="bibtex-upload">Choose file</label>
+                            </div>
+                        </form>
+                        <button id="do-conversion-button" class="btn btn-primary" onclick="convert()" disabled>Convert!</button>
+                    </p>
+
+                    <button class="download-button btn btn-success" style="display: none;" onclick="download()">Download results</button>
+                    <div id="results-area"></div>
+                    <button class="download-button btn btn-success" style="display: none;" onclick="download()">Download results</button>
+                </div>
+            </div>
+        </div>
     </body>
 </html>

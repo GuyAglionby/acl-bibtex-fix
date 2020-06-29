@@ -107,7 +107,6 @@ function downloadSample() {
 }
 
 function useSample(bibText) {
-    console.log(bibText);
     bibtexParsed = bibtexParse.toJSON(bibText);
     bibtexFilename = 'example.bib';
     convertButton.disabled = false;
@@ -249,6 +248,39 @@ function convert() {
 // # Render diffs 
 // ########################################## 
 
+function strikeHoverEnter(elems) {
+    let strike;
+    if (elems[0].classList.contains('field-disabled')) {
+        strike = 'field-disabled-hover-remove';
+    } else {
+        strike = 'field-disabled-hover';
+    }
+    elems.forEach((elem) => {
+        elem.classList.add(strike);
+    });
+}
+
+function strikeHoverLeave(elems) {
+    elems.forEach((elem) => {
+        elem.classList.remove('field-disabled-hover-remove');
+        elem.classList.remove('field-disabled-hover');
+    });
+}
+
+function strike(elems) {
+    const strike = 'field-disabled';
+    elems.forEach((elem) => {
+        if (elem.classList.contains(strike)) {
+            elem.classList.remove(strike);
+        } else {
+            elem.classList.add(strike);
+        }
+        elem.classList.remove('field-disabled-hover-remove');
+        elem.classList.remove('field-disabled-hover');
+    });
+}
+
+
 /*
  * Modified from original by Nick Bailey (2017)
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
@@ -267,13 +299,20 @@ function toDiffedBibtex(orig, modified) {
 
     const entrysep = ',';
     const indent = '        ';
+    const modifiedClass = 'table-row-modified';
 
     if (modified.entryType == orig.entryType) {
         tableElem.appendChild(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
     } else {
         let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
         let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
-        doDiffLine(origLine, modLine, tableElem, 'table-row-bibtextype');
+        let entryElems = doDiffLine(origLine, modLine, ['table-row-bibtextype', modifiedClass]);
+        entryElems.forEach(function(entry) {
+            entry.onclick = () => strike(entryElems);
+            entry.onmouseenter = () => strikeHoverEnter(entryElems);
+            entry.onmouseleave = () => strikeHoverLeave(entryElems);
+            tableElem.appendChild(entry);
+        });
     }
 
     if (modified.entry) {
@@ -285,11 +324,20 @@ function toDiffedBibtex(orig, modified) {
     // Order that we should have the fields in when rendering the bibtex
     let tagSeq = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
     // This is really just for aesthetics
-    if (tagSeq.includes('date') && tagSeq.includes('month') && tagSeq.includes('year')) {
+    let shouldDate = false;
+    if (tagSeq.includes('date') && tagSeq.includes('year')) {
+        // i'm so sorry
+        if (tagSeq.includes('month')) {
+            shouldDate = 'month';
+        } else {
+            shouldDate = 'year';
+        }
         tagSeq = tagSeq.filter(tag => tag != 'year' && tag != 'month');
         let dateIndex = tagSeq.indexOf('date') + 1;
+        if (shouldDate == 'month') {
+            tagSeq.splice(dateIndex, 0, 'month');
+        }
         tagSeq.splice(dateIndex, 0, 'year');
-        tagSeq.splice(dateIndex, 0, 'month');
     }
     if (tagSeq.includes('booktitle') && tagSeq.includes('journaltitle')) {
         let first = tagSeq.indexOf('booktitle') < tagSeq.indexOf('journaltitle') ? 'booktitle' : 'journaltitle';
@@ -303,7 +351,10 @@ function toDiffedBibtex(orig, modified) {
         let dateIndex = tagSeq.indexOf('booktitle') + 1;
         tagSeq.splice(dateIndex, 0, 'publisher');
     }
+
+    // actually do it 
     let numFieldsAdded = 0;
+    let dateFields = []; // this hackery relies on the ordering of (date, month, year) enforced above
     for (let field of tagSeq) {
         let fieldClass = 'table-row-' + field;
         let shouldComma = tagSeq.length != numFieldsAdded + 1;
@@ -319,16 +370,47 @@ function toDiffedBibtex(orig, modified) {
                 modAdded += shouldComma ? ',' : '';
                 let origAdded = indent + field + ' = {' + origEntry + '}';
                 origAdded += shouldComma ? ',' : '';
-                doDiffLine(origAdded, modAdded, tableElem, fieldClass);
+                let entryElems = doDiffLine(origAdded, modAdded, [fieldClass, modifiedClass]);
+                entryElems.forEach(function(entry) {
+                    entry.onclick = () => strike(entryElems);
+                    entry.onmouseenter = () => strikeHoverEnter(entryElems);
+                    entry.onmouseleave = () => strikeHoverLeave(entryElems);
+                    tableElem.appendChild(entry);
+                });
             }
         } else if (field in modified.entryTags) {
             let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            tableElem.appendChild(rowWithText(addedText, [diffClasses['added']['bg'], fieldClass]));
+            let addedElem = rowWithText(addedText, [diffClasses['added']['bg'], fieldClass, modifiedClass]);
+            addedElem.onclick = () => strike([addedElem]);
+            addedElem.onmouseenter = () => strikeHoverEnter([addedElem]);
+            addedElem.onmouseleave = () => strikeHoverLeave([addedElem]);
+            if (shouldDate && (field == 'month' || field == 'year')) {
+                dateFields.push(addedElem);
+                console.log('shouldDate: ' + shouldDate)
+                if (field == shouldDate) {
+                    dateFields.forEach((df) => {
+                        df.onclick = () => strike(dateFields);
+                        df.onmouseenter = () => strikeHoverEnter(dateFields);
+                        df.onmouseleave = () => strikeHoverLeave(dateFields);
+                        tableElem.appendChild(df);
+                    })
+                }
+            } else {
+                tableElem.appendChild(addedElem);
+            }
         } else {
-            let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
-            addedText += shouldComma ? ',' : '';
-            tableElem.appendChild(rowWithText(addedText, [diffClasses['removed']['bg'], fieldClass]));
+            let removedText = indent + field + ' = {' + orig.entryTags[field] + '}';
+            removedText += shouldComma ? ',' : '';
+            let removedElem = rowWithText(removedText, [diffClasses['removed']['bg'], fieldClass, modifiedClass]);
+            removedElem.onclick = () => strike([removedElem]);
+            removedElem.onmouseenter = () => strikeHoverEnter([removedElem]);
+            removedElem.onmouseleave = () => strikeHoverLeave([removedElem]);
+            if (shouldDate && field == 'date') {
+                dateFields.push(removedElem);
+            } else {
+                tableElem.appendChild(removedElem);
+            }
         }
         numFieldsAdded += 1;
     }
@@ -468,14 +550,20 @@ function makeDiffLineElem(diff, prop, clazz) {
         }
     });
     let row = rowWithElem(origE, diffClasses[prop]['bg']);
-    row.classList.add(clazz);
+    if (typeof(clazz) == 'string') {
+        row.classList.add(clazz);
+    } else {
+        clazz.forEach(c => row.classList.add(c));
+    }
     return row;
 }
 
-function doDiffLine(origLine, modLine, parentElem, clazz) {
+function doDiffLine(origLine, modLine, clazz) {
     let diff = Diff.diffWords(origLine, modLine);
-    parentElem.appendChild(makeDiffLineElem(diff, 'removed', clazz));
-    parentElem.appendChild(makeDiffLineElem(diff, 'added', clazz));
+    let elems = [];
+    elems.push(makeDiffLineElem(diff, 'removed', clazz));
+    elems.push(makeDiffLineElem(diff, 'added', clazz));
+    return elems;
 }
 
 // ########################################## 

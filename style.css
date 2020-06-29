@@ -11,6 +11,20 @@
     background-color: #fdb8c0;
 }
 
+.field-disabled {
+    text-decoration: line-through;
+}
+
+.field-disabled-hover {
+    text-decoration: line-through;
+    font-style: italic;
+}
+
+.field-disabled-hover-remove {
+    text-decoration: none;
+    font-style: italic;
+}
+
 table.result span {
     white-space: pre-wrap;
 }

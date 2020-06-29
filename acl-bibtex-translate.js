@@ -77,17 +77,35 @@ function inputElementOnChange(elem) {
     }
 }
 
+function classKeyFromElem(elem, prefix) {
+    for (let clazz of elem.classList) {
+        if (clazz.startsWith(prefix)) {
+            return clazz.substring(prefix.length, clazz.length);
+        }
+    }
+}
+
 function download() {
     let removedTables = $("table.hidden-table");
     let translWithRemoval = JSON.parse(JSON.stringify(translatedEntries));
     $('table.hidden-table').each(function(i) {
-        this.classList.forEach((clazz) => { 
-            if (clazz.startsWith('table-id-')) {
-                let citationKey = clazz.substring('table-id-'.length, clazz.length);
-                let idx = bibtexKeyToIdx[citationKey];
-                translWithRemoval[idx] = bibtexParsed[idx];
+        let citationKey = classKeyFromElem(this, 'table-id-');
+        let idx = bibtexKeyToIdx[citationKey];
+        translWithRemoval[idx] = bibtexParsed[idx];
+    });
+    $('tr.field-disabled').each(function(i) {
+        let citationKey = classKeyFromElem(this.parentNode, 'table-id-');
+        let idx = bibtexKeyToIdx[citationKey];
+        let field = classKeyFromElem(this, 'table-row-field-');
+        if (field == 'bibtextype') {
+            translWithRemoval[idx]['entryType'] = bibtexParsed[idx]['entryType'];
+        } else {
+            if (field in bibtexParsed[idx]['entryTags']) {
+                translWithRemoval[idx]['entryTags'][field] = bibtexParsed[idx]['entryTags'][field];
+            } else {
+                delete translWithRemoval[idx]['entryTags'][field];
             }
-        });
+        }
     });
 
     let bibtexString = toBibtex(translWithRemoval, false);
@@ -306,7 +324,7 @@ function toDiffedBibtex(orig, modified) {
     } else {
         let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
         let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
-        let entryElems = doDiffLine(origLine, modLine, ['table-row-bibtextype', modifiedClass]);
+        let entryElems = doDiffLine(origLine, modLine, ['table-row-field-bibtextype', modifiedClass]);
         entryElems.forEach(function(entry) {
             entry.onclick = () => strike(entryElems);
             entry.onmouseenter = () => strikeHoverEnter(entryElems);
@@ -356,7 +374,7 @@ function toDiffedBibtex(orig, modified) {
     let numFieldsAdded = 0;
     let dateFields = []; // this hackery relies on the ordering of (date, month, year) enforced above
     for (let field of tagSeq) {
-        let fieldClass = 'table-row-' + field;
+        let fieldClass = 'table-row-field-' + field;
         let shouldComma = tagSeq.length != numFieldsAdded + 1;
         if (field in modified.entryTags && field in orig.entryTags) {
             let modEntry = modified.entryTags[field];

@@ -189,7 +189,8 @@ function convert() {
     let ithChange = 1;
     for (let i = 0; i < translatedEntries.length; i++) {
         if (bibtexParsed[i] != translatedEntries[i]) {
-            let changeNumDiv = changeIofN(ithChange, numChanges)
+            let changeNumDiv = changeIofN(ithChange, numChanges);
+            ithChange += 1;
             resultsArea.append(changeNumDiv);
             resultsArea.appendChild(toDiffedBibtex(bibtexParsed[i], translatedEntries[i]));
         }

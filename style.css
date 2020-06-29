@@ -1,13 +1,13 @@
-.addedLine {
+.added-line {
     background-color: #e6ffed;
 }
-.addedText {
+.added-text {
     background-color: #acf2bd;
 }
-.removedLine {
+.removed-line {
     background-color: #ffeef0;
 }
-.removedText {
+.removed-text {
     background-color: #fdb8c0;
 }
 
@@ -21,33 +21,33 @@ table.result {
     font-size: 14px;
 }
 
-.acceptChangeRadio {
+.accept-change-radio {
     float: right;
 }
 
-div.acceptChangeRadio label {
+div.accept-change-radio label {
     border-bottom-width: 0px;
 }
 
-div.acceptChangeRadio > .btn-group > .btn-group:not(:last-child) > .btn, div.acceptChangeRadio > .btn-group > .btn:not(:last-child):not(.dropdown-toggle) {
+div.accept-change-radio > .btn-group > .btn-group:not(:last-child) > .btn, div.accept-change-radio > .btn-group > .btn:not(:last-child):not(.dropdown-toggle) {
     border-bottom-left-radius: 0px;
 }
 
-div.acceptChangeRadio > .btn-group > .btn-group:not(:first-child) > .btn, div.acceptChangeRadio > .btn-group > .btn:not(:first-child) {
+div.accept-change-radio > .btn-group > .btn-group:not(:first-child) > .btn, div.accept-change-radio > .btn-group > .btn:not(:first-child) {
     border-bottom-right-radius: 0px;
 }
 
-.changeIofN {
+.change-i-of-n {
     font-weight: bold;
     padding-left: 50px;
     font-size: 18px;
 }
 
-.hiddenTable {
-    opacity: 0.6;
+.hidden-table {
+    opacity: 0.7;
 }
 
-#mainContent { 
+#main-content { 
     top: 40px;
     position: relative;
     padding-top: 15px;

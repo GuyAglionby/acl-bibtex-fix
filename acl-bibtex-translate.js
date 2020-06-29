@@ -34,12 +34,12 @@ const diacriticRegex = /[\u0300-\u036f]/g;
 // Github colours
 const diffClasses = {
     'removed': {
-        'bg': 'removedLine',
-        'text': 'removedText'
+        'bg': 'removed-line',
+        'text': 'removed-text'
     },
     'added': {
-        'bg': 'addedLine',
-        'text': 'addedText'
+        'bg': 'added-line',
+        'text': 'added-text'
     }
 };
 
@@ -216,9 +216,10 @@ function convert() {
  */
 function toDiffedBibtex(orig, modified) {
     let parentElem = document.createElement('div');
-    parentElem.className += 'col-lg-10 offset-lg-1 '
+    parentElem.classList.add('col-lg-10');
+    parentElem.classList.add('offset-lg-1');
     let tableElem = document.createElement('table');
-    tableElem.className += 'result ';
+    tableElem.classList.add('result');
 
     parentElem.appendChild(acceptChangeRadio(tableElem));
     parentElem.appendChild(clearfix());
@@ -340,20 +341,20 @@ function toBibtex(json, compact) {
 
 function clearfix() {
     let c = document.createElement('div');
-    c.className += 'clearfix';
+    c.classList.add('clearfix');
     return c;
 }
 
 function changeIofN(i, n) {
     let s = document.createElement('p');
-    s.className += 'changeIofN'
+    s.classList.add('change-i-of-n');
     s.innerText = 'Change ' + i + '/' + n;
     return s;
 }
 
 function acceptChangeRadio(relatedTable) {
     let parentE = document.createElement('div');
-    parentE.className += 'acceptChangeRadio';
+    parentE.classList.add('accept-change-radio');
     parentE.innerHTML = `<div class="btn-group btn-group-toggle" data-toggle="buttons">
   <label class="btn btn-outline-success btn-sm active">
     <input type="radio" name="options" id="option1" checked> Accept
@@ -372,11 +373,11 @@ function acceptChangeRadio(relatedTable) {
 // ########################################## 
 
 function hideTable(table) {
-    table.classList.add('hiddenTable');
+    table.classList.add('hidden-table');
 }
 
 function unhideTable(table) {
-    table.classList.remove('hiddenTable');
+    table.classList.remove('hidden-table');
 }
 
 function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
@@ -384,7 +385,7 @@ function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
     parentSpan.appendChild(spanWithText(pre));
     parentSpan.appendChild(spanWithText(changed, highlight_clazz));
     parentSpan.appendChild(spanWithText(post));
-    parentSpan.className += whole_clazz;
+    parentSpan.classList.add(whole_clazz);
     return parentSpan;
 }
 
@@ -392,7 +393,7 @@ function spanWithText(text, clazz) {
     let s = document.createElement('span');
     s.textContent = text;
     if (!!clazz) {
-        s.className += clazz;
+        s.classList.add(clazz);
     }
     return s;
 }
@@ -407,7 +408,11 @@ function rowWithElem(elem, clazz) {
     r.appendChild(d);
     d.appendChild(elem);
     if (!!clazz) {
-        r.className += clazz;
+        if (typeof(clazz) == 'string') {
+            r.classList.add(clazz);
+        } else {
+            clazz.forEach(c => r.classList.add(c));
+        }
     }
     return r;
 }

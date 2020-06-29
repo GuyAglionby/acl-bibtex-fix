@@ -85,10 +85,20 @@ function download() {
     element.setAttribute('download', downloadFilename);
     element.style.display = 'none';
     document.body.appendChild(element);
-
     element.click();
-
     document.body.removeChild(element);
+}
+
+function downloadSample() {
+    loadGz('./example.bib.gz', useSample);
+}
+
+function useSample(bibText) {
+    console.log(bibText);
+    bibtexParsed = bibtexParse.toJSON(bibText);
+    bibtexFilename = 'example.bib';
+    convertButton.disabled = false;
+    convert();
 }
 
 // ########################################## 
@@ -123,6 +133,7 @@ function convert() {
     resultsArea.innerHTML = '';
     $(".download-button").css({'display': 'none'});
     resultsArea.appendChild(document.createElement('hr'));
+    resultsArea.appendChild(spanWithText('Loaded ' + bibtexParsed.length + ' BibTeX entries'));
     let numChanges = 0;
     translatedEntries = bibtexParsed.map(entry => {
         let strippedTitle = simplifyTitle(entry['entryTags']['title']);
@@ -134,6 +145,16 @@ function convert() {
                 delete newEntry.entryTags.eprint;
                 delete newEntry.entryTags.eprinttype;
                 delete newEntry.entryTags.journaltitle;
+                delete newEntry.entryTags.journal;
+            }
+            if (anthEntry.bibType == 'article') {
+                if ('journaltitle' in newEntry.entryTags) {
+                    newEntry.entryTags.journaltitle = anthEntry.journal;
+                    delete newEntry.entryTags.journal;
+                } else {
+                    newEntry.entryTags.journal = anthEntry.journal;
+                    delete newEntry.entryTags.journaltitle;
+                }
             }
             newEntry.entryType = anthEntry.bibType;
             newEntry.entryTags.title = anthEntry.title;
@@ -153,7 +174,6 @@ function convert() {
                     delete newEntry.entryTags.url;
                 }
             }
-            delete newEntry.entryTags.urldate;
             if ("month" in anthEntry) {
                 if ("date" in newEntry.entryTags) {
                     let existingDate = matchDate(newEntry.entryTags.date, dateFormats);
@@ -179,7 +199,9 @@ function convert() {
             } else{
                 console.warn("No date info available for title :" + strippedTitle);
             }
-            numChanges += 1;
+            if (!_.isEqual(entry, newEntry)) {
+                numChanges += 1;
+            }
             return newEntry;
         } else {
             return entry;
@@ -188,7 +210,7 @@ function convert() {
 
     let ithChange = 1;
     for (let i = 0; i < translatedEntries.length; i++) {
-        if (bibtexParsed[i] != translatedEntries[i]) {
+        if (!_.isEqual(bibtexParsed[i], translatedEntries[i])) {
             let changeNumDiv = changeIofN(ithChange, numChanges);
             ithChange += 1;
             resultsArea.append(changeNumDiv);
@@ -233,7 +255,7 @@ function toDiffedBibtex(orig, modified) {
     } else {
         let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
         let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
-        doDiffLine(origLine, modLine, tableElem);
+        doDiffLine(origLine, modLine, tableElem, 'table-row-bibtextype');
     }
 
     if (modified.entry) {
@@ -265,6 +287,7 @@ function toDiffedBibtex(orig, modified) {
     }
     let numFieldsAdded = 0;
     for (let field of tagSeq) {
+        let fieldClass = 'table-row-' + field;
         let shouldComma = tagSeq.length != numFieldsAdded + 1;
         if (field in modified.entryTags && field in orig.entryTags) {
             let modEntry = modified.entryTags[field];
@@ -278,16 +301,16 @@ function toDiffedBibtex(orig, modified) {
                 modAdded += shouldComma ? ',' : '';
                 let origAdded = indent + field + ' = {' + origEntry + '}';
                 origAdded += shouldComma ? ',' : '';
-                doDiffLine(origAdded, modAdded, tableElem);
+                doDiffLine(origAdded, modAdded, tableElem, fieldClass);
             }
         } else if (field in modified.entryTags) {
             let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            tableElem.appendChild(rowWithText(addedText, diffClasses['added']['bg']));
+            tableElem.appendChild(rowWithText(addedText, [diffClasses['added']['bg'], fieldClass]));
         } else {
             let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            tableElem.appendChild(rowWithText(addedText, diffClasses['removed']['bg']));
+            tableElem.appendChild(rowWithText(addedText, [diffClasses['removed']['bg'], fieldClass]));
         }
         numFieldsAdded += 1;
     }
@@ -417,7 +440,7 @@ function rowWithElem(elem, clazz) {
     return r;
 }
 
-function makeDiffLineElem(diff, prop) {
+function makeDiffLineElem(diff, prop, clazz) {
     let origE = document.createElement('span');
     diff.forEach((part) => {
         if (!part.added && !part.removed) {
@@ -426,13 +449,15 @@ function makeDiffLineElem(diff, prop) {
             origE.appendChild(spanWithText(part.value, diffClasses[prop]['text']));
         }
     });
-    return rowWithElem(origE, diffClasses[prop]['bg']);
+    let row = rowWithElem(origE, diffClasses[prop]['bg']);
+    row.classList.add(clazz);
+    return row;
 }
 
-function doDiffLine(origLine, modLine, parentElem) {
+function doDiffLine(origLine, modLine, parentElem, clazz) {
     let diff = Diff.diffWords(origLine, modLine);
-    parentElem.appendChild(makeDiffLineElem(diff, 'removed')) 
-    parentElem.appendChild(makeDiffLineElem(diff, 'added'));
+    parentElem.appendChild(makeDiffLineElem(diff, 'removed', clazz));
+    parentElem.appendChild(makeDiffLineElem(diff, 'added', clazz));
 }
 
 // ########################################## 
@@ -440,11 +465,16 @@ function doDiffLine(origLine, modLine, parentElem) {
 // ########################################## 
 
 function loadJsonGz(file, callback) {
+    loadGz(file, response => {
+        callback(JSON.parse(response))
+    });
+}
+
+function loadGz(file, callback) {
     fetch(file)
         .then(response => response.arrayBuffer())
         .then(response => pako.inflate(response))
         .then(response => new TextDecoder("ascii").decode(response))
-        .then(response => JSON.parse(response))
         .then(callback);
 }
 

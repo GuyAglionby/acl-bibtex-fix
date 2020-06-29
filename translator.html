@@ -17,6 +17,7 @@
         <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
         <!-- My scripts -->
         <script src="reverseMappingTable.js" type="text/javascript"></script>
         <script src="acl-bibtex-translate.js" type="text/javascript"></script>
@@ -34,7 +35,8 @@
                         Here is some inspiring text about how you should fix your bibliographies.
                     </p>
                     <p>
-                        Upload your bibtex here:
+                        Upload your bibtex below, or <a href="#" onclick="downloadSample()">use a sample file</a>.
+
                         <form id="upload-form">
                             <div class="custom-file col-lg-8 col-12 offset-lg-2 col-sm-10 offset-sm-1">
                                 <input type="file" name="bibtex-upload" id="bibtex-upload" class="custom-file-input" onchange="inputElementOnChange(this)" accept=".bib" autocomplete="off">

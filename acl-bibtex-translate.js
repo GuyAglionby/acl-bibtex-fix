@@ -5,6 +5,7 @@ var resultsArea;
 var bibtexFilename;
 var bibtexContent;
 var bibtexParsed;
+var bibtexKeyToIdx;
 var translatedEntries;
 
 var reverseMapping;
@@ -77,7 +78,19 @@ function inputElementOnChange(elem) {
 }
 
 function download() {
-    let bibtexString = toBibtex(translatedEntries, false);
+    let removedTables = $("table.hidden-table");
+    let translWithRemoval = JSON.parse(JSON.stringify(translatedEntries));
+    $('table.hidden-table').each(function(i) {
+        this.classList.forEach((clazz) => { 
+            if (clazz.startsWith('table-id-')) {
+                let citationKey = clazz.substring('table-id-'.length, clazz.length);
+                let idx = bibtexKeyToIdx[citationKey];
+                translWithRemoval[idx] = bibtexParsed[idx];
+            }
+        });
+    });
+
+    let bibtexString = toBibtex(translWithRemoval, false);
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(bibtexString));
     let downloadFilename = bibtexFilename.substring(0, bibtexFilename.length - '.bib'.length);
@@ -135,8 +148,11 @@ function convert() {
     resultsArea.appendChild(document.createElement('hr'));
     resultsArea.appendChild(spanWithText('Loaded ' + bibtexParsed.length + ' BibTeX entries'));
     let numChanges = 0;
+    let idx = 0;
+    bibtexKeyToIdx = {};
     translatedEntries = bibtexParsed.map(entry => {
         let strippedTitle = simplifyTitle(entry['entryTags']['title']);
+        idx += 1;
         if (strippedTitle in anthology) {
             let newEntry = JSON.parse(JSON.stringify(entry));
             let anthEntry = anthology[strippedTitle];
@@ -201,6 +217,7 @@ function convert() {
             }
             if (!_.isEqual(entry, newEntry)) {
                 numChanges += 1;
+                bibtexKeyToIdx[newEntry.citationKey] = idx - 1;
             }
             return newEntry;
         } else {
@@ -242,6 +259,7 @@ function toDiffedBibtex(orig, modified) {
     parentElem.classList.add('offset-lg-1');
     let tableElem = document.createElement('table');
     tableElem.classList.add('result');
+    tableElem.classList.add('table-id-' + modified.citationKey);
 
     parentElem.appendChild(acceptChangeRadio(tableElem));
     parentElem.appendChild(clearfix());

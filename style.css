@@ -21,10 +21,30 @@ table.result {
     font-size: 14px;
 }
 
+.acceptChangeRadio {
+    float: right;
+}
+
+div.acceptChangeRadio label {
+    border-bottom-width: 0px;
+}
+
+div.acceptChangeRadio > .btn-group > .btn-group:not(:last-child) > .btn, div.acceptChangeRadio > .btn-group > .btn:not(:last-child):not(.dropdown-toggle) {
+    border-bottom-left-radius: 0px;
+}
+
+div.acceptChangeRadio > .btn-group > .btn-group:not(:first-child) > .btn, div.acceptChangeRadio > .btn-group > .btn:not(:first-child) {
+    border-bottom-right-radius: 0px;
+}
+
 .changeIofN {
     font-weight: bold;
     padding-left: 50px;
     font-size: 18px;
+}
+
+.hiddenTable {
+    opacity: 0.6;
 }
 
 #mainContent { 
@@ -32,6 +52,7 @@ table.result {
     position: relative;
     padding-top: 15px;
     padding-bottom: 20px;
+    margin-bottom: 75px;
 }
 
 #do-conversion-button {
@@ -45,3 +66,6 @@ table.result {
     margin-bottom: 15px;
 }
 
+.download-button {
+    float: right;
+}

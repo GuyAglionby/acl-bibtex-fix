@@ -189,7 +189,8 @@ function convert() {
     let ithChange = 1;
     for (let i = 0; i < translatedEntries.length; i++) {
         if (bibtexParsed[i] != translatedEntries[i]) {
-            resultsArea.append(changeIofN(ithChange, numChanges));
+            let changeNumDiv = changeIofN(ithChange, numChanges)
+            resultsArea.append(changeNumDiv);
             resultsArea.appendChild(toDiffedBibtex(bibtexParsed[i], translatedEntries[i]));
         }
     }
@@ -213,21 +214,28 @@ function convert() {
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
  */
 function toDiffedBibtex(orig, modified) {
-    let parentElem = document.createElement('table');
-    parentElem.className += 'result col-lg-10 offset-lg-1 '
+    let parentElem = document.createElement('div');
+    parentElem.className += 'col-lg-10 offset-lg-1 '
+    let tableElem = document.createElement('table');
+    tableElem.className += 'result ';
+
+    parentElem.appendChild(acceptChangeRadio(tableElem));
+    parentElem.appendChild(clearfix());
+    parentElem.appendChild(tableElem);
+
     const entrysep = ',';
     const indent = '        ';
 
     if (modified.entryType == orig.entryType) {
-        parentElem.appendChild(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
+        tableElem.appendChild(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
     } else {
         let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
         let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
-        doDiffLine(origLine, modLine, parentElem);
+        doDiffLine(origLine, modLine, tableElem);
     }
 
     if (modified.entry) {
-        parentElem.appendChild(rowWithText(modified.entry));
+        tableElem.appendChild(rowWithText(modified.entry));
     }
 
     let modIdx = 0;
@@ -262,26 +270,26 @@ function toDiffedBibtex(orig, modified) {
             if (modEntry == origEntry) {
                 let addedText = indent + field + ' = {' + modEntry + '}';
                 addedText += shouldComma ? ',' : '';
-                parentElem.appendChild(rowWithText(addedText));
+                tableElem.appendChild(rowWithText(addedText));
             } else {
-                let modAdded = indent + field + ' = {' + modEntry;
+                let modAdded = indent + field + ' = {' + modEntry + '}';
                 modAdded += shouldComma ? ',' : '';
-                let origAdded = indent + field + ' = {' + origEntry;
+                let origAdded = indent + field + ' = {' + origEntry + '}';
                 origAdded += shouldComma ? ',' : '';
-                doDiffLine(origAdded, modAdded, parentElem);
+                doDiffLine(origAdded, modAdded, tableElem);
             }
         } else if (field in modified.entryTags) {
             let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            parentElem.appendChild(rowWithText(addedText, diffClasses['added']['bg']));
+            tableElem.appendChild(rowWithText(addedText, diffClasses['added']['bg']));
         } else {
             let addedText = indent + field + ' = {' + orig.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
-            parentElem.appendChild(rowWithText(addedText, diffClasses['removed']['bg']));
+            tableElem.appendChild(rowWithText(addedText, diffClasses['removed']['bg']));
         }
         numFieldsAdded += 1;
     }
-    parentElem.appendChild(rowWithText('}'));
+    tableElem.appendChild(rowWithText('}'));
     return parentElem;
 }
 
@@ -329,6 +337,12 @@ function toBibtex(json, compact) {
 // # Helper functions for random text 
 // ########################################## 
 
+function clearfix() {
+    let c = document.createElement('div');
+    c.className += 'clearfix';
+    return c;
+}
+
 function changeIofN(i, n) {
     let s = document.createElement('p');
     s.className += 'changeIofN'
@@ -336,9 +350,33 @@ function changeIofN(i, n) {
     return s;
 }
 
+function acceptChangeRadio(relatedTable) {
+    let parentE = document.createElement('div');
+    parentE.className += 'acceptChangeRadio';
+    parentE.innerHTML = `<div class="btn-group btn-group-toggle" data-toggle="buttons">
+  <label class="btn btn-outline-success btn-sm active">
+    <input type="radio" name="options" id="option1" checked> Accept
+  </label>
+  <label class="btn btn-outline-danger btn-sm">
+    <input type="radio" name="options" id="option2"> Reject 
+  </label>
+</div>`
+    parentE.querySelector('.btn-outline-success').onclick = () => unhideTable(relatedTable);
+    parentE.querySelector('.btn-outline-danger').onclick = () => hideTable(relatedTable);
+    return parentE;
+}
+
 // ########################################## 
 // # Helper functions for rendering diffs 
 // ########################################## 
+
+function hideTable(table) {
+    table.classList.add('hiddenTable');
+}
+
+function unhideTable(table) {
+    table.classList.remove('hiddenTable');
+}
 
 function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
     let parentSpan = document.createElement('span');

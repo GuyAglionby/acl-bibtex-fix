@@ -3,7 +3,7 @@
     <head>
         <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
         <meta content="utf-8" http-equiv="encoding">
-        <title>BibTeX Upload</title>
+        <title>*CL Bibliography Fixer</title>
         <!-- Style + bootstrap -->
         <link rel="stylesheet" href="style.css" />
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
@@ -27,24 +27,28 @@
         <div class="container-fluid">
             <div class="row justify-content-center">
                 <div class="col-lg-8 col-sm-10 rounded-lg shadow bg-light" id="main-content">
-                    <h1>ACL Bibliography Fix-up</h1>
-                    <div class="alert alert-danger" id="no-js" role="alert">
-                        <h2 id="no-jss" class="text-danger">Please enable Javascript!</span>
+                    <div class="col-lg-8 col-sm-12 offset-lg-2">
+                        <h1>*CL Bibliography Fixer</h1>
+                        <div class="alert alert-danger" id="no-js" role="alert">
+                            <h2 id="no-jss" class="text-danger">Please enable Javascript!</span>
+                        </div>
+                        <p>
+                            This tool fixes incomplete *CL BibTeX entries to ensure that papers are correctly cited as their published version.
+                            This covers papers downloaded from arXiv, Google Scholar, Semantic Scholar, and the like which may not contain the full citation as stored in the <a href="https://www.aclweb.org/anthology/" taret="_blank">ACL Anthology</a>. 
+                        </p>
+                        <p>
+                            <b>Usage:</b> upload your .bib file below, or <a href="#" onclick="downloadSample()">try with a sample file</a>. You can accept or reject all changes to each entry using the buttons on the right, or reject changes to individual fields by clicking on them. Once you're done, download the fixed .bib (includes all unchanged entries). There may be a little lag while loading files, especially if they are large. 
+                        </p>
+                        <p>
+                            <form id="upload-form">
+                                <div class="custom-file col-lg-8 col-12 offset-lg-2 col-sm-10 offset-sm-1">
+                                    <input type="file" name="bibtex-upload" id="bibtex-upload" class="custom-file-input" onchange="inputElementOnChange(this)" accept=".bib" autocomplete="off">
+                                    <label class="custom-file-label" for="bibtex-upload">Choose file</label>
+                                </div>
+                            </form>
+                            <button id="do-conversion-button" class="btn btn-primary" onclick="convert()" disabled>Convert!</button>
+                        </p>
                     </div>
-                    <p>
-                        Here is some inspiring text about how you should fix your bibliographies.
-                    </p>
-                    <p>
-                        Upload your bibtex below, or <a href="#" onclick="downloadSample()">use a sample file</a>.
-
-                        <form id="upload-form">
-                            <div class="custom-file col-lg-8 col-12 offset-lg-2 col-sm-10 offset-sm-1">
-                                <input type="file" name="bibtex-upload" id="bibtex-upload" class="custom-file-input" onchange="inputElementOnChange(this)" accept=".bib" autocomplete="off">
-                                <label class="custom-file-label" for="bibtex-upload">Choose file</label>
-                            </div>
-                        </form>
-                        <button id="do-conversion-button" class="btn btn-primary" onclick="convert()" disabled>Convert!</button>
-                    </p>
 
                     <button class="download-button btn btn-success" style="display: none;" onclick="download()">Download results</button>
                     <div class="clearfix"></div>

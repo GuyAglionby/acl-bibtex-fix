@@ -244,7 +244,6 @@ function convert() {
     });
 
     let ithChange = 1;
-    let lastHr;
     for (let i = 0; i < translatedEntries.length; i++) {
         if (!_.isEqual(bibtexParsed[i], translatedEntries[i])) {
             let parentElem = document.createElement('div');
@@ -258,7 +257,6 @@ function convert() {
 
             let hr = document.createElement('hr');
             hr.classList.add('result-divide');
-            lastHr = hr;
             parentElem.appendChild(hr);
 
             resultsArea.appendChild(parentElem);
@@ -267,7 +265,7 @@ function convert() {
     }
     if (numChanges > 0) {
         $(".download-button").css({'display': ''});
-        resultsArea.removeChild(lastHr);
+        $('hr.result-divide').last().remove();
     } else {
         let noResultsElem = document.createElement('p');
         noResultsElem.textContent = 'No changes found!';
@@ -312,6 +310,10 @@ function strike(elems) {
             elem.classList.add(strike);
             if (allVisFieldsHidden()) {
                 $('button.download-button').prop('disabled', true);
+            }
+            let tableParent = elem.parentNode;
+            if (allVisFieldsHiddenForTable(tableParent)) {
+                $(tableParent.parentNode).find('.btn-outline-danger').click()
             }
         }
         elem.classList.remove('field-disabled-hover-remove');
@@ -422,7 +424,6 @@ function toDiffedBibtex(orig, modified, parentElem) {
             addStrikeEvents(addedElem, [addedElem]);
             if (shouldDate && (field == 'month' || field == 'year')) {
                 dateFields.push(addedElem);
-                console.log('shouldDate: ' + shouldDate)
                 if (field == shouldDate) {
                     dateFields.forEach((df) => {
                         addStrikeEvents(df, dateFields);
@@ -527,11 +528,15 @@ function acceptChangeRadio(relatedTable) {
 // ########################################## 
 
 function allTablesHidden() {
-    return $('table.hidden-table').length == $('table.result').length
+    return $('table.hidden-table').length == $('table.result').length;
 }
 
 function allVisFieldsHidden() {
-    return $('table.result:not(.hidden-table) tr.table-row-modified').length == $('table.result:not(.hidden-table) tr.table-row-modified.field-disabled').length
+    return $('table.result:not(.hidden-table) tr.table-row-modified').length == $('table.result:not(.hidden-table) tr.table-row-modified.field-disabled').length;
+}
+
+function allVisFieldsHiddenForTable(table) {
+    return $(table).children('tr.table-row-modified').length == $(table).children('tr.table-row-modified.field-disabled').length;
 }
 
 function hideTable(table) {

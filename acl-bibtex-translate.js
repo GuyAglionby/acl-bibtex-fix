@@ -44,7 +44,7 @@ const diffClasses = {
     }
 };
 
-name_types = ['first', 'middle', 'last', 'prelast', 'lineage'];
+const nameTypes = ['first', 'middle', 'last', 'prelast', 'lineage'];
 
 // date formats
 const dateFormats = [
@@ -160,6 +160,12 @@ function simplifyTitle(title) {
     return [...title.matchAll(simplifyRegex)].join(' ');
 }
 
+function nameFromParts(parts) {
+    let authorLast = [parts.prelast, parts.last, parts.lineage].filter(n => !!n).join(' ')
+    let authorFirst = [parts.first, parts.middle].filter(n => !!n).join(' ');
+    return [authorLast, authorFirst].join(', ')
+}
+
 function convert() {
     resultsArea.innerHTML = '';
     $(".download-button").css({'display': 'none'});
@@ -192,15 +198,26 @@ function convert() {
             }
             newEntry.entryType = anthEntry.bibType;
             newEntry.entryTags.title = anthEntry.title;
-            newEntry.entryTags.pages = anthEntry.pages;
+
             if (anthEntry.bibType == 'inproceedings') {
                 newEntry.entryTags.booktitle = anthEntry.booktitle;
             }
-            for (let possTag of ["doi", "pages", "publisher"]) {
+            for (let possTag of ["doi", "pages", "publisher", "pages"]) {
                 if (possTag in anthEntry) {
                     newEntry.entryTags[possTag] = anthEntry[possTag];
                 }
             }
+
+            if ("author" in anthEntry.people) {
+                let authors = anthEntry.people.author.map(nameFromParts);
+                newEntry.entryTags['author'] = authors.join(' and ');
+            }
+
+            if ("editor" in anthEntry.people) {
+                let editors = anthEntry.people.editor.map(nameFromParts);
+                newEntry.entryTags['editor'] = editors.join(' and ');
+            }
+
             if ("url" in anthEntry) {
                 newEntry.entryTags.url = anthEntry.url;
             } else {
@@ -225,7 +242,11 @@ function convert() {
                         newEntry.entryTags.year = anthEntry.year;
                     }
                 } else {
-                    newEntry.entryTags.month = anthEntry.month;
+                    let existingMonth = matchDate(newEntry.entryTags.month, dateFormats);
+                    let anthMonth = matchDate(anthEntry.month, monthFormats);
+                    if (existingMonth.month()  != anthMonth.month()) {
+                        newEntry.entryTags.month = anthEntry.month;
+                    }
                     newEntry.entryTags.year = anthEntry.year;
                 }
             } else if ("date" in anthEntry) {

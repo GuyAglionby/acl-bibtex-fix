@@ -1,5 +1,4 @@
 // Hello, welcome to the jungle
-var convertButton;
 var resultsArea;
 
 var bibtexFilename;
@@ -18,10 +17,7 @@ window.onload = function() {
       var fileName = $(this).val().split("\\").pop();
       $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
     });
-    let noJsElem = document.getElementById('no-js');
-    noJsElem.parentNode.removeChild(noJsElem);
-    inputElement = document.getElementById('bibtex-upload');
-    convertButton = document.getElementById('do-conversion-button');
+    $('#no-js').remove();
     resultsArea = document.getElementById('results-area');
 
     getReverseMapping(); // technically a race here, but shouldn't be an issue
@@ -65,7 +61,7 @@ const monthFormats = [
 
 function inputElementOnChange(elem) { 
     // https://stackoverflow.com/questions/16215771/how-open-select-file-dialog-via-js/16215950
-    convertButton.disabled = true;
+    $('#do-conversion-button').prop('disabled', true);
     let file = elem.files[0];
     bibtexFilename = file.name;
     let reader = new FileReader();
@@ -73,7 +69,7 @@ function inputElementOnChange(elem) {
     reader.onload = readerEvent => {
         bibtexContent = readerEvent.target.result;
         bibtexParsed = bibtexParse.toJSON(bibtexContent);
-        convertButton.disabled = false;
+        $('#do-conversion-button').prop('disabled', false);
     }
 }
 
@@ -128,7 +124,7 @@ function useSample(bibText) {
     bibtexParsed = bibtexParse.toJSON(bibText);
     bibtexFilename = 'example.bib';
     $(".custom-file-label").html(bibtexFilename);
-    convertButton.disabled = false;
+    $('#do-conversion-button').prop('disabled', false);
     convert();
 }
 

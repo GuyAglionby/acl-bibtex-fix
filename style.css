@@ -43,6 +43,7 @@ table.result {
     border: 1px solid gray;
     font-family: monospace;
     font-size: 14px;
+    width: 100%;
 }
 
 .result-divide {

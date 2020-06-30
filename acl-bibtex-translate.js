@@ -177,9 +177,9 @@ function resolveAccents(anthText, userText) {
     // a mix of bibtex-encoded and unicode-encoded chars
     for (const [bib, unicode] of Object.entries(reverseMapping)) {
         if (userText.includes(bib)) {
-            anthText = anthText.replace(unicode, bib);
+            anthText = anthText.replaceAll(unicode, bib);
         } else if (userText.includes(unicode)) {
-            anthText = anthText.replace(bib, unicode);
+            anthText = anthText.replaceAll(bib, unicode);
         }
     }
     return anthText;
@@ -684,6 +684,14 @@ function getReverseMapping() {
 
 function saveReverseMapping(mapping) {
     reverseMapping = mapping;
+    let matcher = /{\\([A-Za-z]) ([A-Za-z])}/;
+    for (const [bib, unic] of Object.entries(reverseMapping)) {
+        let match = bib.match(matcher);
+        if (match) {
+            let newBib = "{\\" + match[1] + "{" + match[2] + "}}";
+            reverseMapping[newBib] = unic;
+        }
+    }
 }
 
 function loadAnthology() {

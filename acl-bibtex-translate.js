@@ -246,11 +246,12 @@ function convert() {
                     delete newEntry.entryTags.url;
                 }
             }
-            if ("month" in anthEntry) {
-                if ("date" in newEntry.entryTags) {
-                    let existingDate = matchDate(newEntry.entryTags.date, dateFormats);
-                    let anthMonth = matchDate(anthEntry.month, monthFormats);
-                    if (existingDate.isValid() && anthMonth.isValid()) {
+
+            if ("date" in newEntry.entryTags) {
+                let existingDate = matchDate(newEntry.entryTags.date, dateFormats);
+                let anthMonth = matchDate(anthEntry.month, monthFormats);
+                if (existingDate.isValid()) {
+                    if (anthMonth.isValid()) {
                         // Only change existing dates if they're wrong (don't change format just for the sake of it)
                         if (existingDate.year() != anthEntry.year || existingDate.month()  != anthMonth.month()) {
                             delete newEntry.entryTags.date;
@@ -258,23 +259,28 @@ function convert() {
                             newEntry.entryTags.year = anthEntry.year;
                         }
                     } else {
-                        delete newEntry.entryTags.date;
-                        newEntry.entryTags.month = anthEntry.month;
-                        newEntry.entryTags.year = anthEntry.year;
+                        newEntry.entryTags.date = anthEntry.year;
+                        delete newEntry.entryTags.month;
                     }
                 } else {
-                    let existingMonth = matchDate(newEntry.entryTags.month, dateFormats);
-                    let anthMonth = matchDate(anthEntry.month, monthFormats);
-                    if (existingMonth.month()  != anthMonth.month()) {
+                    // If we can't match their date, throw it away
+                    delete newEntry.entryTags.date;
+                    if (!!anthEntry.month) {
                         newEntry.entryTags.month = anthEntry.month;
                     }
                     newEntry.entryTags.year = anthEntry.year;
                 }
-            } else if ("date" in anthEntry) {
-                newEntry.entryTags.date = anthEntry.date;
-            } else{
-                console.warn("No date info available for title :" + strippedTitle);
+            } else {
+                let existingMonth = matchDate(newEntry.entryTags.month, dateFormats);
+                let anthMonth = matchDate(anthEntry.month, monthFormats);
+                if (!!anthMonth) {
+                    delete newEntry.entryTags.month;
+                } else if (existingMonth.month()  != anthMonth.month()) {
+                    newEntry.entryTags.month = anthEntry.month;
+                }
+                newEntry.entryTags.year = anthEntry.year;
             }
+
             if (!_.isEqual(entry, newEntry)) {
                 numChanges += 1;
                 bibtexKeyToIdx[newEntry.citationKey] = idx - 1;

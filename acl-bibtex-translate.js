@@ -127,6 +127,7 @@ function downloadSample() {
 function useSample(bibText) {
     bibtexParsed = bibtexParse.toJSON(bibText);
     bibtexFilename = 'example.bib';
+    $(".custom-file-label").html(bibtexFilename);
     convertButton.disabled = false;
     convert();
 }
@@ -162,8 +163,8 @@ function simplifyTitle(title) {
 function convert() {
     resultsArea.innerHTML = '';
     $(".download-button").css({'display': 'none'});
+    resultsArea.appendChild(spanWithText('Loaded ' + bibtexParsed.length + ' BibTeX entries', 'loaded-entries-text'));
     resultsArea.appendChild(document.createElement('hr'));
-    resultsArea.appendChild(spanWithText('Loaded ' + bibtexParsed.length + ' BibTeX entries'));
     let numChanges = 0;
     let idx = 0;
     bibtexKeyToIdx = {};
@@ -243,20 +244,34 @@ function convert() {
     });
 
     let ithChange = 1;
+    let lastHr;
     for (let i = 0; i < translatedEntries.length; i++) {
         if (!_.isEqual(bibtexParsed[i], translatedEntries[i])) {
+            let parentElem = document.createElement('div');
+            parentElem.classList.add('col-lg-10');
+            parentElem.classList.add('offset-lg-1');
+            
             let changeNumDiv = changeIofN(ithChange, numChanges);
+            parentElem.append(changeNumDiv);
+            
+            toDiffedBibtex(bibtexParsed[i], translatedEntries[i], parentElem);
+
+            let hr = document.createElement('hr');
+            hr.classList.add('result-divide');
+            lastHr = hr;
+            parentElem.appendChild(hr);
+
+            resultsArea.appendChild(parentElem);
             ithChange += 1;
-            resultsArea.append(changeNumDiv);
-            resultsArea.appendChild(toDiffedBibtex(bibtexParsed[i], translatedEntries[i]));
         }
     }
-
     if (numChanges > 0) {
         $(".download-button").css({'display': ''});
+        resultsArea.removeChild(lastHr);
     } else {
         let noResultsElem = document.createElement('p');
-        noResultsElem.textContent('No changes found!');
+        noResultsElem.textContent = 'No changes found!';
+        noResultsElem.classList.add('no-changes')
         resultsArea.appendChild(noResultsElem);
     }
     resultsArea.appendChild(document.createElement('hr'));
@@ -314,10 +329,7 @@ function addStrikeEvents(elem, actionElems) {
  * Modified from original by Nick Bailey (2017)
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
  */
-function toDiffedBibtex(orig, modified) {
-    let parentElem = document.createElement('div');
-    parentElem.classList.add('col-lg-10');
-    parentElem.classList.add('offset-lg-1');
+function toDiffedBibtex(orig, modified, parentElem) {
     let tableElem = document.createElement('table');
     tableElem.classList.add('result');
     tableElem.classList.add('table-id-' + modified.citationKey);

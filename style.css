@@ -11,6 +11,16 @@
     background-color: #fdb8c0;
 }
 
+.loaded-entries-text {
+    font-style: italic;
+}
+
+.no-changes { 
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
 .field-disabled {
     text-decoration: line-through;
 }
@@ -35,6 +45,10 @@ table.result {
     font-size: 14px;
 }
 
+.result-divide {
+    margin-top: 2rem;
+}
+
 .accept-change-radio {
     float: right;
 }
@@ -53,8 +67,8 @@ div.accept-change-radio > .btn-group > .btn-group:not(:first-child) > .btn, div.
 
 .change-i-of-n {
     font-weight: bold;
-    padding-left: 50px;
     font-size: 18px;
+    margin-bottom: -15px;
 }
 
 .hidden-table {

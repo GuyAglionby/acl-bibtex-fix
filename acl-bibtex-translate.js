@@ -156,10 +156,33 @@ function simplifyTitle(title) {
     return [...title.matchAll(simplifyRegex)].join(' ');
 }
 
+function nameFromComponents(parts, components) {
+    let compound = [];
+    for (let p of components) {
+        if (!!parts[p]) {
+            compound.push(...parts[p]);
+        }
+    }
+    return compound;
+}
+
 function nameFromParts(parts) {
-    let authorLast = [parts.prelast, parts.last, parts.lineage].filter(n => !!n).join(' ')
-    let authorFirst = [parts.first, parts.middle].filter(n => !!n).join(' ');
+    let authorLast = nameFromComponents(parts, ["prelast", "last", "lineage"]).join(' ')
+    let authorFirst = nameFromComponents(parts, ["first", "middle"]).join(' ')
     return [authorLast, authorFirst].join(', ')
+}
+
+function resolveAccents(anthText, userText) {
+    // This won't do exactly as intended if their text has 
+    // a mix of bibtex-encoded and unicode-encoded chars
+    for (const [bib, unicode] of Object.entries(reverseMapping)) {
+        if (userText.includes(bib)) {
+            anthText = anthText.replace(unicode, bib);
+        } else if (userText.includes(unicode)) {
+            anthText = anthText.replace(bib, unicode);
+        }
+    }
+    return anthText;
 }
 
 function convert() {
@@ -206,12 +229,14 @@ function convert() {
 
             if ("author" in anthEntry.people) {
                 let authors = anthEntry.people.author.map(nameFromParts);
-                newEntry.entryTags['author'] = authors.join(' and ');
+                let authorsJoined = authors.join(' and ');
+                newEntry.entryTags['author'] = resolveAccents(authorsJoined, newEntry.entryTags['author']);
             }
 
             if ("editor" in anthEntry.people) {
                 let editors = anthEntry.people.editor.map(nameFromParts);
-                newEntry.entryTags['editor'] = editors.join(' and ');
+                let editorsJoined = editors.join(' and ');
+                newEntry.entryTags['editor'] = resolveAccents(editorsJoined, newEntry.entryTags['editor']);
             }
 
             if ("url" in anthEntry) {

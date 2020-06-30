@@ -76,6 +76,13 @@ div.accept-change-radio > .btn-group > .btn-group:not(:first-child) > .btn, div.
     opacity: 0.7;
 }
 
+#feedback {
+    position: absolute;
+    font-size: x-small;
+    bottom: 1px;
+    left: 4px;
+}
+
 #main-content { 
     top: 40px;
     position: relative;

@@ -40,6 +40,9 @@
                             <b>Usage:</b> upload your .bib file below, or <a href="#" onclick="downloadSample()">try with a sample file</a>. You can accept or reject all changes to each entry using the buttons on the right, or reject changes to individual fields by clicking on them. Once you're done, download the fixed .bib (includes all unchanged entries). There may be a little lag while loading files, especially if they are large. 
                         </p>
                         <p>
+                            All processing is done locally; no citations are sent anywhere.
+                        </p>
+                        <p>
                             <form id="upload-form">
                                 <div class="custom-file col-lg-8 col-12 offset-lg-2 col-sm-10 offset-sm-1">
                                     <input type="file" name="bibtex-upload" id="bibtex-upload" class="custom-file-input" onchange="inputElementOnChange(this)" accept=".bib" autocomplete="off">

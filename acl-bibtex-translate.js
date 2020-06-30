@@ -304,6 +304,11 @@ function strike(elems) {
     });
 }
 
+function addStrikeEvents(elem, actionElems) {
+    elem.onclick = () => strike(actionElems);
+    elem.onmouseenter = () => strikeHoverEnter(actionElems);
+    elem.onmouseleave = () => strikeHoverLeave(actionElems);
+}
 
 /*
  * Modified from original by Nick Bailey (2017)
@@ -332,9 +337,7 @@ function toDiffedBibtex(orig, modified) {
         let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
         let entryElems = doDiffLine(origLine, modLine, ['table-row-field-bibtextype', modifiedClass]);
         entryElems.forEach(function(entry) {
-            entry.onclick = () => strike(entryElems);
-            entry.onmouseenter = () => strikeHoverEnter(entryElems);
-            entry.onmouseleave = () => strikeHoverLeave(entryElems);
+            addStrikeEvents(entry, entryElems);
             tableElem.appendChild(entry);
         });
     }
@@ -396,9 +399,7 @@ function toDiffedBibtex(orig, modified) {
                 origAdded += shouldComma ? ',' : '';
                 let entryElems = doDiffLine(origAdded, modAdded, [fieldClass, modifiedClass]);
                 entryElems.forEach(function(entry) {
-                    entry.onclick = () => strike(entryElems);
-                    entry.onmouseenter = () => strikeHoverEnter(entryElems);
-                    entry.onmouseleave = () => strikeHoverLeave(entryElems);
+                    addStrikeEvents(entry, entryElems);
                     tableElem.appendChild(entry);
                 });
             }
@@ -406,17 +407,13 @@ function toDiffedBibtex(orig, modified) {
             let addedText = indent + field + ' = {' + modified.entryTags[field] + '}';
             addedText += shouldComma ? ',' : '';
             let addedElem = rowWithText(addedText, [diffClasses['added']['bg'], fieldClass, modifiedClass]);
-            addedElem.onclick = () => strike([addedElem]);
-            addedElem.onmouseenter = () => strikeHoverEnter([addedElem]);
-            addedElem.onmouseleave = () => strikeHoverLeave([addedElem]);
+            addStrikeEvents(addedElem, [addedElem]);
             if (shouldDate && (field == 'month' || field == 'year')) {
                 dateFields.push(addedElem);
                 console.log('shouldDate: ' + shouldDate)
                 if (field == shouldDate) {
                     dateFields.forEach((df) => {
-                        df.onclick = () => strike(dateFields);
-                        df.onmouseenter = () => strikeHoverEnter(dateFields);
-                        df.onmouseleave = () => strikeHoverLeave(dateFields);
+                        addStrikeEvents(df, dateFields);
                         tableElem.appendChild(df);
                     })
                 }
@@ -427,9 +424,7 @@ function toDiffedBibtex(orig, modified) {
             let removedText = indent + field + ' = {' + orig.entryTags[field] + '}';
             removedText += shouldComma ? ',' : '';
             let removedElem = rowWithText(removedText, [diffClasses['removed']['bg'], fieldClass, modifiedClass]);
-            removedElem.onclick = () => strike([removedElem]);
-            removedElem.onmouseenter = () => strikeHoverEnter([removedElem]);
-            removedElem.onmouseleave = () => strikeHoverLeave([removedElem]);
+            addStrikeEvents(removedElem, [removedElem]);
             if (shouldDate && field == 'date') {
                 dateFields.push(removedElem);
             } else {

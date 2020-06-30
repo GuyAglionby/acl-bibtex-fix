@@ -290,8 +290,14 @@ function strike(elems) {
     elems.forEach((elem) => {
         if (elem.classList.contains(strike)) {
             elem.classList.remove(strike);
+            if (!allTablesHidden()) {
+                $('button.download-button').prop('disabled', false);
+            }
         } else {
             elem.classList.add(strike);
+            if (allVisFieldsHidden()) {
+                $('button.download-button').prop('disabled', true);
+            }
         }
         elem.classList.remove('field-disabled-hover-remove');
         elem.classList.remove('field-disabled-hover');
@@ -513,12 +519,28 @@ function acceptChangeRadio(relatedTable) {
 // # Helper functions for rendering diffs 
 // ########################################## 
 
+function allTablesHidden() {
+    return $('table.hidden-table').length == $('table.result').length
+}
+
+function allVisFieldsHidden() {
+    return $('table.result:not(.hidden-table) tr.table-row-modified').length == $('table.result:not(.hidden-table) tr.table-row-modified.field-disabled').length
+}
+
 function hideTable(table) {
     table.classList.add('hidden-table');
+    if (allTablesHidden()) {
+        $('button.download-button').prop('disabled', true);
+    } else if (allVisFieldsHidden()) {
+        $('button.download-button').prop('disabled', true);
+    }
 }
 
 function unhideTable(table) {
     table.classList.remove('hidden-table');
+    if (!allVisFieldsHidden()) {
+        $('button.download-button').prop('disabled', false);
+    }
 }
 
 function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {

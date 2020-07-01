@@ -206,6 +206,10 @@ function convert() {
                 delete newEntry.entryTags.journaltitle;
                 delete newEntry.entryTags.journal;
             }
+            // Other way around (less likely to see this?)
+            if (newEntry.entryType == 'inproceedings' && anthEntry.bibType == 'article') {
+                delete newEntry.entryTags.booktitle;
+            }
             if (anthEntry.bibType == 'article') {
                 if ('journaltitle' in newEntry.entryTags) {
                     newEntry.entryTags.journaltitle = anthEntry.journal;
@@ -227,16 +231,14 @@ function convert() {
                 }
             }
 
-            if ("author" in anthEntry.people) {
-                let authors = anthEntry.people.author.map(nameFromParts);
-                let authorsJoined = authors.join(' and ');
-                newEntry.entryTags['author'] = resolveAccents(authorsJoined, newEntry.entryTags['author']);
-            }
-
-            if ("editor" in anthEntry.people) {
-                let editors = anthEntry.people.editor.map(nameFromParts);
-                let editorsJoined = editors.join(' and ');
-                newEntry.entryTags['editor'] = resolveAccents(editorsJoined, newEntry.entryTags['editor']);
+            for (const contributorType of ['author', 'editor']) {
+                if (contributorType in anthEntry.people) {
+                    let contributors = anthEntry.people[contributorType].map(nameFromParts);
+                    let contributorsJoined = contributors.join(' and ');
+                    newEntry.entryTags[contributorType] = resolveAccents(contributorsJoined, newEntry.entryTags[contributorType]);
+                } else {
+                    delete newEntry.entryTags[contributorType];
+                }
             }
 
             if ("url" in anthEntry) {
@@ -265,7 +267,7 @@ function convert() {
                 } else {
                     // If we can't match their date, throw it away
                     delete newEntry.entryTags.date;
-                    if (!!anthEntry.month) {
+                    if (anthEntry.month) {
                         newEntry.entryTags.month = anthEntry.month;
                     }
                     newEntry.entryTags.year = anthEntry.year;

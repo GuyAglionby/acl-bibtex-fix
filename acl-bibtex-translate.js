@@ -271,11 +271,11 @@ function convert() {
                     newEntry.entryTags.year = anthEntry.year;
                 }
             } else {
-                let existingMonth = matchDate(newEntry.entryTags.month, dateFormats);
+                let existingMonth = matchDate(newEntry.entryTags.month, monthFormats);
                 let anthMonth = matchDate(anthEntry.month, monthFormats);
-                if (!!anthMonth) {
+                if (!anthMonth) {
                     delete newEntry.entryTags.month;
-                } else if (existingMonth.month()  != anthMonth.month()) {
+                } else if (existingMonth.month() != anthMonth.month()) {
                     newEntry.entryTags.month = anthEntry.month;
                 }
                 newEntry.entryTags.year = anthEntry.year;

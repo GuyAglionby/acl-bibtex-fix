@@ -53,6 +53,25 @@ function addStrikeEvents(elem, actionElems) {
     elem.mouseleave(() => strikeHoverLeave(actionElems));
 }
 
+function enforceFieldOrder(allFields, rearrangeFields) {
+    // Enforces the order of the rearrangeFields as given,
+    // at the position of the first-occurring one.
+    let presentFields = rearrangeFields.filter(field => allFields.includes(field));
+
+    if (presentFields.length <= 1) {
+        return allFields;
+    }
+
+    let fieldIdxs = presentFields.map(field => allFields.indexOf(field));
+    let lowestIndex = Math.min(...fieldIdxs);
+    console.log(allFields);
+    allFields = allFields.filter(field => !presentFields.includes(field));
+    console.log(allFields);
+    presentFields.reverse().forEach(field => allFields.splice(lowestIndex, 0, field));
+    console.log(allFields);
+    return allFields;
+}
+
 const indent = "        ";
 /*
  * Modified from original by Nick Bailey (2017)
@@ -70,6 +89,7 @@ function toDiffedBibtex(orig, modified, parentElem) {
     const entrysep = ",";
     const modifiedClass = "table-row-modified";
 
+    // Entry type
     if (modified.entryType == orig.entryType) {
         tableElem.append(rowWithText(`@${modified.entryType}{${modified.citationKey}${entrysep}`));
     } else {
@@ -89,52 +109,44 @@ function toDiffedBibtex(orig, modified, parentElem) {
     let modIdx = 0;
     let origIdx = 0;
     // Order that we should have the fields in when rendering the bibtex
-    let tagSeq = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
+    let fieldOrder = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
     // This is really just for aesthetics
     let shouldDate = false;
-    if (tagSeq.includes("date") && tagSeq.includes("year")) {
+    if (fieldOrder.includes("date") && fieldOrder.includes("year")) {
         // i'm so sorry
-        if (tagSeq.includes("month")) {
+        if (fieldOrder.includes("month")) {
             shouldDate = "month";
         } else {
             shouldDate = "year";
         }
-        tagSeq = tagSeq.filter(tag => tag != "year" && tag != "month");
-        let dateIndex = tagSeq.indexOf("date") + 1;
+    //    fieldOrder = fieldOrder.filter(tag => tag != "year" && tag != "month");
+      //  let dateIndex = fieldOrder.indexOf("date") + 1;
         if (shouldDate == "month") {
-            tagSeq.splice(dateIndex, 0, "month");
+  //          fieldOrder.splice(dateIndex, 0, "month");
         }
-        tagSeq.splice(dateIndex, 0, "year");
+//        fieldOrder.splice(dateIndex, 0, "year");
     }
-    if (tagSeq.includes("booktitle") && tagSeq.includes("journaltitle")) {
-        let first = tagSeq.indexOf("booktitle") < tagSeq.indexOf("journaltitle") ? "booktitle" : "journaltitle";
-        let second = first == "booktitle" ? "journaltitle" : "booktitle";
-        tagSeq = tagSeq.filter(tag => tag != second);
-        let dateIndex = tagSeq.indexOf(first) + 1;
-        tagSeq.splice(dateIndex, 0, second);
-    }
-    if (tagSeq.includes("booktitle") && tagSeq.includes("publisher")) {
-        tagSeq = tagSeq.filter(tag => tag != "publisher");
-        let dateIndex = tagSeq.indexOf("booktitle") + 1;
-        tagSeq.splice(dateIndex, 0, "publisher");
-    }
+    fieldOrder = enforceFieldOrder(fieldOrder, ["date", "year", "month"]);
+    fieldOrder = enforceFieldOrder(fieldOrder, ["journaltitle", "booktitle", "publisher"]);
 
     // actually do it 
     let numFieldsAdded = 0;
     let dateFields = []; // this hackery relies on the ordering of (date, month, year) enforced above
-    for (let field of tagSeq) {
+    for (let field of fieldOrder) {
         let fieldClass = `table-row-field-${field}`;
-        let isLastField = tagSeq.length == numFieldsAdded + 1;
+        let isLastField = fieldOrder.length == numFieldsAdded + 1;
         let suffix = isLastField ? "" : entrysep;
+
         if (field in modified.entryTags && field in orig.entryTags) {
+            // Field isn't new, but may or may not be modified 
             let modEntry = modified.entryTags[field];
             let origEntry = orig.entryTags[field];
             if (modEntry == origEntry) {
-                let addedText = makeFieldLine(field, modEntry, suffix);
+                let addedText = textForField(field, modEntry, suffix);
                 tableElem.append(rowWithText(addedText));
             } else {
-                let modAdded = makeFieldLine(field, modEntry, suffix);
-                let origAdded = makeFieldLine(field, origEntry, suffix);
+                let modAdded = textForField(field, modEntry, suffix);
+                let origAdded = textForField(field, origEntry, suffix);
                 let entryElems = doDiffLine(origAdded, modAdded, [fieldClass, modifiedClass]);
                 entryElems.forEach(function(entry) {
                     addStrikeEvents(entry, entryElems);
@@ -142,7 +154,8 @@ function toDiffedBibtex(orig, modified, parentElem) {
                 });
             }
         } else if (field in modified.entryTags) {
-            let addedText = makeFieldLine(field, modified.entryTags[field], suffix);
+            // Field is a new one  
+            let addedText = textForField(field, modified.entryTags[field], suffix);
             let addedElem = rowWithText(addedText, [diffClasses["added"]["bg"], fieldClass, modifiedClass]);
             addStrikeEvents(addedElem, [addedElem]);
             if (shouldDate && (field == "month" || field == "year")) {
@@ -157,7 +170,8 @@ function toDiffedBibtex(orig, modified, parentElem) {
                 tableElem.append(addedElem);
             }
         } else {
-            let removedText = makeFieldLine(field, orig.entryTags[field], suffix);
+            // Field is being removed
+            let removedText = textForField(field, orig.entryTags[field], suffix);
             let removedElem = rowWithText(removedText, [diffClasses["removed"]["bg"], fieldClass, modifiedClass]);
             addStrikeEvents(removedElem, [removedElem]);
             if (shouldDate && field == "date") {
@@ -172,7 +186,7 @@ function toDiffedBibtex(orig, modified, parentElem) {
     return parentElem;
 }
 
-function makeFieldLine(field, value, suffix) {
+function textForField(field, value, suffix) {
     return `${indent}${field} = {${value}}${suffix}`
 }
 
@@ -231,14 +245,14 @@ function unhideTable(table) {
     $("button.download-button").prop("disabled", allVisFieldsHidden());
 }
 
-function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
+/*function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
     let parentSpan = $(document.createElement("span"));
     parentSpan.append(spanWithText(pre));
     parentSpan.append(spanWithText(changed, highlight_clazz));
     parentSpan.append(spanWithText(post));
     parentSpan.addClass(whole_clazz);
     return parentSpan;
-}
+}*/
 
 function spanWithText(text, clazz) {
     return $(document.createElement("span")).text(text).addClass(clazz);

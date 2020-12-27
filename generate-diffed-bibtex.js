@@ -53,6 +53,7 @@ function addStrikeEvents(elem, actionElems) {
     elem.mouseleave(() => strikeHoverLeave(actionElems));
 }
 
+const indent = "        ";
 /*
  * Modified from original by Nick Bailey (2017)
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
@@ -60,21 +61,20 @@ function addStrikeEvents(elem, actionElems) {
 function toDiffedBibtex(orig, modified, parentElem) {
     let tableElem = $(document.createElement("table"));
     tableElem.addClass("result");
-    tableElem.addClass("table-id-" + modified.citationKey);
+    tableElem.addClass(`table-id-${modified.citationKey}`);
 
     parentElem.append(acceptChangeRadio(tableElem));
     parentElem.append(clearfix());
     parentElem.append(tableElem);
 
     const entrysep = ",";
-    const indent = "        ";
     const modifiedClass = "table-row-modified";
 
     if (modified.entryType == orig.entryType) {
-        tableElem.append(rowWithText("@" + modified.entryType + "{" + modified.citationKey + entrysep));
+        tableElem.append(rowWithText(`@${modified.entryType}{${modified.citationKey}${entrysep}`));
     } else {
-        let origLine = "@" + orig.entryType + "{" + modified.citationKey + entrysep;
-        let modLine = "@" + modified.entryType + "{" + modified.citationKey + entrysep;
+        let origLine = `@${orig.entryType}{${modified.citationKey}${entrysep}`;
+        let modLine = `@${modified.entryType}{${modified.citationKey}${entrysep}`;
         let entryElems = doDiffLine(origLine, modLine, ["table-row-field-bibtextype", modifiedClass]);
         entryElems.forEach(function(entry) {
             addStrikeEvents(entry, entryElems);
@@ -123,20 +123,18 @@ function toDiffedBibtex(orig, modified, parentElem) {
     let numFieldsAdded = 0;
     let dateFields = []; // this hackery relies on the ordering of (date, month, year) enforced above
     for (let field of tagSeq) {
-        let fieldClass = "table-row-field-" + field;
-        let shouldComma = tagSeq.length != numFieldsAdded + 1;
+        let fieldClass = `table-row-field-${field}`;
+        let isLastField = tagSeq.length == numFieldsAdded + 1;
+        let suffix = isLastField ? "" : entrysep;
         if (field in modified.entryTags && field in orig.entryTags) {
             let modEntry = modified.entryTags[field];
             let origEntry = orig.entryTags[field];
             if (modEntry == origEntry) {
-                let addedText = indent + field + " = {" + modEntry + "}";
-                addedText += shouldComma ? "," : "";
+                let addedText = makeFieldLine(field, modEntry, suffix);
                 tableElem.append(rowWithText(addedText));
             } else {
-                let modAdded = indent + field + " = {" + modEntry + "}";
-                modAdded += shouldComma ? "," : "";
-                let origAdded = indent + field + " = {" + origEntry + "}";
-                origAdded += shouldComma ? "," : "";
+                let modAdded = makeFieldLine(field, modEntry, suffix);
+                let origAdded = makeFieldLine(field, origEntry, suffix);
                 let entryElems = doDiffLine(origAdded, modAdded, [fieldClass, modifiedClass]);
                 entryElems.forEach(function(entry) {
                     addStrikeEvents(entry, entryElems);
@@ -144,8 +142,7 @@ function toDiffedBibtex(orig, modified, parentElem) {
                 });
             }
         } else if (field in modified.entryTags) {
-            let addedText = indent + field + " = {" + modified.entryTags[field] + "}";
-            addedText += shouldComma ? "," : "";
+            let addedText = makeFieldLine(field, modified.entryTags[field], suffix);
             let addedElem = rowWithText(addedText, [diffClasses["added"]["bg"], fieldClass, modifiedClass]);
             addStrikeEvents(addedElem, [addedElem]);
             if (shouldDate && (field == "month" || field == "year")) {
@@ -160,8 +157,7 @@ function toDiffedBibtex(orig, modified, parentElem) {
                 tableElem.append(addedElem);
             }
         } else {
-            let removedText = indent + field + " = {" + orig.entryTags[field] + "}";
-            removedText += shouldComma ? "," : "";
+            let removedText = makeFieldLine(field, orig.entryTags[field], suffix);
             let removedElem = rowWithText(removedText, [diffClasses["removed"]["bg"], fieldClass, modifiedClass]);
             addStrikeEvents(removedElem, [removedElem]);
             if (shouldDate && field == "date") {
@@ -174,6 +170,10 @@ function toDiffedBibtex(orig, modified, parentElem) {
     }
     tableElem.append(rowWithText("}"));
     return parentElem;
+}
+
+function makeFieldLine(field, value, suffix) {
+    return `${indent}${field} = {${value}}${suffix}`
 }
 
 
@@ -223,18 +223,12 @@ function allVisFieldsHiddenForTable(table) {
 
 function hideTable(table) {
     table.addClass("hidden-table");
-    if (allTablesHidden()) {
-        $("button.download-button").prop("disabled", true);
-    } else if (allVisFieldsHidden()) {
-        $("button.download-button").prop("disabled", true);
-    }
+    $("button.download-button").prop("disabled", allTablesHidden() || allVisFieldsHidden());
 }
 
 function unhideTable(table) {
     table.removeClass("hidden-table");
-    if (!allVisFieldsHidden()) {
-        $("button.download-button").prop("disabled", false);
-    }
+    $("button.download-button").prop("disabled", allVisFieldsHidden());
 }
 
 function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
@@ -247,10 +241,7 @@ function diffedSpan(pre, changed, post, highlight_clazz, whole_clazz) {
 }
 
 function spanWithText(text, clazz) {
-    let s = $(document.createElement("span"));
-    s.text(text);
-    s.addClass(clazz);
-    return s;
+    return $(document.createElement("span")).text(text).addClass(clazz);
 }
 
 function rowWithText(text, clazz) {

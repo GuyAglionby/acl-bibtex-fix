@@ -45,9 +45,6 @@ function strike(elems) {
 }
 
 function addStrikeEvents(elem, actionElems) {
-    // XXX hack - addStrikeEvents is called twice for date-type fields,
-    // which breaks things. Fix that, then remove the below.
-    elem.unbind()
     elem.click(() => strike(actionElems));
     elem.mouseenter(() => strikeHoverEnter(actionElems));
     elem.mouseleave(() => strikeHoverLeave(actionElems));
@@ -64,53 +61,54 @@ function enforceFieldOrder(allFields, rearrangeFields) {
 
     let fieldIdxs = presentFields.map(field => allFields.indexOf(field));
     let lowestIndex = Math.min(...fieldIdxs);
-    console.log(allFields);
+
     allFields = allFields.filter(field => !presentFields.includes(field));
-    console.log(allFields);
     presentFields.reverse().forEach(field => allFields.splice(lowestIndex, 0, field));
-    console.log(allFields);
     return allFields;
 }
 
-const indent = "        ";
 /*
  * Modified from original by Nick Bailey (2017)
  * https://github.com/ORCID/bibtexParseJs/blob/master/bibtexParse.js#L323-L354
  */
 function toDiffedBibtex(orig, modified, parentElem) {
-    let tableElem = $(document.createElement("table"));
-    tableElem.addClass("result");
-    tableElem.addClass(`table-id-${modified.citationKey}`);
+    let table = $(document.createElement("table"))
+        .addClass("result")
+        .addClass(`table-id-${modified.citationKey}`);
 
-    parentElem.append(acceptChangeRadio(tableElem));
+    parentElem.append(acceptChangeRadio(table));
     parentElem.append(clearfix());
-    parentElem.append(tableElem);
+    parentElem.append(table);
 
-    const entrysep = ",";
     const modifiedClass = "table-row-modified";
 
     // Entry type
     if (modified.entryType == orig.entryType) {
-        tableElem.append(rowWithText(`@${modified.entryType}{${modified.citationKey}${entrysep}`));
+        table.append(rowWithText(`@${modified.entryType}{${modified.citationKey}${entrysep}`));
     } else {
         let origLine = `@${orig.entryType}{${modified.citationKey}${entrysep}`;
         let modLine = `@${modified.entryType}{${modified.citationKey}${entrysep}`;
         let entryElems = doDiffLine(origLine, modLine, ["table-row-field-bibtextype", modifiedClass]);
         entryElems.forEach(function(entry) {
             addStrikeEvents(entry, entryElems);
-            tableElem.append(entry);
+            table.append(entry);
         });
     }
 
     if (modified.entry) {
-        tableElem.append(rowWithText(modified.entry));
+        table.append(rowWithText(modified.entry));
     }
 
     let modIdx = 0;
     let origIdx = 0;
     // Order that we should have the fields in when rendering the bibtex
     let fieldOrder = Diff.diffArrays(Object.keys(modified.entryTags), Object.keys(orig.entryTags)).map(x=>x.value).reduce((a, v) => a.concat(v), []);
-    // This is really just for aesthetics
+
+    // Force the field order for aesthetics
+    const dateFieldOrder = ["date", "year", "month"];
+    fieldOrder = enforceFieldOrder(fieldOrder, dateFieldOrder);
+    fieldOrder = enforceFieldOrder(fieldOrder, ["journaltitle", "booktitle", "publisher"]);
+
     let shouldDate = false;
     if (fieldOrder.includes("date") && fieldOrder.includes("year")) {
         // i'm so sorry
@@ -119,75 +117,83 @@ function toDiffedBibtex(orig, modified, parentElem) {
         } else {
             shouldDate = "year";
         }
-    //    fieldOrder = fieldOrder.filter(tag => tag != "year" && tag != "month");
-      //  let dateIndex = fieldOrder.indexOf("date") + 1;
-        if (shouldDate == "month") {
-  //          fieldOrder.splice(dateIndex, 0, "month");
-        }
-//        fieldOrder.splice(dateIndex, 0, "year");
-    }
-    fieldOrder = enforceFieldOrder(fieldOrder, ["date", "year", "month"]);
-    fieldOrder = enforceFieldOrder(fieldOrder, ["journaltitle", "booktitle", "publisher"]);
+    } 
 
     // actually do it 
-    let numFieldsAdded = 0;
     let dateFields = []; // this hackery relies on the ordering of (date, month, year) enforced above
+    let fieldToElementMapping = {};
     for (let field of fieldOrder) {
         let fieldClass = `table-row-field-${field}`;
-        let isLastField = fieldOrder.length == numFieldsAdded + 1;
-        let suffix = isLastField ? "" : entrysep;
+        let fieldHasModification = true;
+        let tableElements = [];
 
         if (field in modified.entryTags && field in orig.entryTags) {
             // Field isn't new, but may or may not be modified 
             let modEntry = modified.entryTags[field];
             let origEntry = orig.entryTags[field];
             if (modEntry == origEntry) {
-                let addedText = textForField(field, modEntry, suffix);
-                tableElem.append(rowWithText(addedText));
+                fieldHasModification = false;
+                tableElements.push(rowWithText(textForField(field, modEntry)));
             } else {
-                let modAdded = textForField(field, modEntry, suffix);
-                let origAdded = textForField(field, origEntry, suffix);
-                let entryElems = doDiffLine(origAdded, modAdded, [fieldClass, modifiedClass]);
-                entryElems.forEach(function(entry) {
-                    addStrikeEvents(entry, entryElems);
-                    tableElem.append(entry);
-                });
+                let modifiedText = textForField(field, modEntry);
+                let origText = textForField(field, origEntry);
+                let entryElems = doDiffLine(origText, modifiedText, [fieldClass, modifiedClass]);
+                tableElements.push(...entryElems);
             }
         } else if (field in modified.entryTags) {
             // Field is a new one  
-            let addedText = textForField(field, modified.entryTags[field], suffix);
+            let addedText = textForField(field, modified.entryTags[field]);
             let addedElem = rowWithText(addedText, [diffClasses["added"]["bg"], fieldClass, modifiedClass]);
-            addStrikeEvents(addedElem, [addedElem]);
-            if (shouldDate && (field == "month" || field == "year")) {
-                dateFields.push(addedElem);
-                if (field == shouldDate) {
-                    dateFields.forEach((df) => {
-                        addStrikeEvents(df, dateFields);
-                        tableElem.append(df);
-                    })
-                }
-            } else {
-                tableElem.append(addedElem);
-            }
+            tableElements.push(addedElem);
         } else {
             // Field is being removed
-            let removedText = textForField(field, orig.entryTags[field], suffix);
+            let removedText = textForField(field, orig.entryTags[field]);
             let removedElem = rowWithText(removedText, [diffClasses["removed"]["bg"], fieldClass, modifiedClass]);
-            addStrikeEvents(removedElem, [removedElem]);
-            if (shouldDate && field == "date") {
-                dateFields.push(removedElem);
-            } else {
-                tableElem.append(removedElem);
+            tableElements.push(removedElem);
+        }
+
+        tableElements.forEach(element => table.append(element));
+        if (fieldHasModification) {
+            fieldToElementMapping[field] = tableElements; 
+        }
+    }
+
+    // Fields which should be toggled together. Currently only date fields.
+    let toggleTogetherFields = [];
+
+    let presentDateFields = dateFieldOrder.filter(field => field in fieldToElementMapping); 
+    if (presentDateFields.length > 1) {
+        toggleTogetherFields.push(presentDateFields);
+    }
+
+    for (let toggleTogetherFieldSet of toggleTogetherFields) {
+        let previousFieldElements = {};
+        for (let field of toggleTogetherFieldSet) {
+            previousFieldElements[field] = [...fieldToElementMapping[field]];
+        }
+        for (let sourceField of toggleTogetherFieldSet) {
+            for (let originField of toggleTogetherFieldSet) {
+                if (sourceField == originField) {
+                    continue;
+                }
+                fieldToElementMapping[sourceField].push(...previousFieldElements[originField])
             }
         }
-        numFieldsAdded += 1;
     }
-    tableElem.append(rowWithText("}"));
+
+    // Add event handlers to strike out text
+    for (let tableElements of Object.values(fieldToElementMapping)) {
+        tableElements.forEach(element => addStrikeEvents(element, tableElements)); 
+    }
+
+    table.append(rowWithText("}"));
     return parentElem;
 }
 
-function textForField(field, value, suffix) {
-    return `${indent}${field} = {${value}}${suffix}`
+const indent = "        ";
+const entrysep = ",";
+function textForField(field, value) {
+    return `${indent}${field} = {${value}}${entrysep}`
 }
 
 

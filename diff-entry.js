@@ -1,8 +1,6 @@
 const simplifyRegex = /[A-Za-z0-9]+/g;
-const removeChars = ['\\', '{', '}', '$'];
+const titleRemoveChars = ["\\", "{", "}", "$"];
 const diacriticRegex = /[\u0300-\u036f]/g;
-
-const nameTypes = ['first', 'middle', 'last', 'prelast', 'lineage'];
 
 // date formats
 const dateFormats = [
@@ -22,15 +20,15 @@ const monthFormats = [
 ];
 
 function simplifyTitle(title) {
-    for (let toRemove of removeChars) {
-        title = title.replaceAll(toRemove, '');
+    for (let toRemove of titleRemoveChars) {
+        title = title.replaceAll(toRemove, "");
     }
     title = title.toLowerCase();
     Object.keys(reverseMapping).forEach(function(source) {
         title = title.replace(source, reverseMapping[source]);
     });
     title = title.normalize("NFD").replace(diacriticRegex, "");
-    return [...title.matchAll(simplifyRegex)].join(' ');
+    return [...title.matchAll(simplifyRegex)].join(" ");
 }
 
 function matchDate(dateString, formats) {
@@ -55,9 +53,9 @@ function nameFromComponents(parts, components) {
 }
 
 function nameFromParts(parts) {
-    let authorLast = nameFromComponents(parts, ["prelast", "last", "lineage"]).join(' ')
-    let authorFirst = nameFromComponents(parts, ["first", "middle"]).join(' ')
-    return [authorLast, authorFirst].join(', ')
+    let authorLast = nameFromComponents(parts, ["prelast", "last", "lineage"]).join(" ")
+    let authorFirst = nameFromComponents(parts, ["first", "middle"]).join(" ")
+    return [authorLast, authorFirst].join(", ")
 }
 
 function resolveAccents(anthText, userText) {
@@ -81,32 +79,32 @@ function matchAnthEntry(title) {
 }
 
 function convert() {
-    resultsArea.innerHTML = '';
-    $(".download-button").css({'display': 'none'});
-    resultsArea.appendChild(spanWithText('Loaded ' + bibtexParsed.length + ' BibTeX entries', 'loaded-entries-text'));
-    resultsArea.appendChild(document.createElement('hr'));
+    $("#results-area").empty();
+    $(".download-button").css({"display": "none"});
+    $("#results-area").append(spanWithText("Loaded " + bibtexParsed.length + " BibTeX entries", "loaded-entries-text"));
+    $("#results-area").append($(document.createElement("hr")));
     let numChanges = 0;
     let idx = 0;
     bibtexKeyToIdx = {};
     translatedEntries = bibtexParsed.map(entry => {
-        let strippedTitle = simplifyTitle(entry['entryTags']['title']);
+        let strippedTitle = simplifyTitle(entry["entryTags"]["title"]);
         idx += 1;
         let anthEntry = matchAnthEntry(strippedTitle);
         if (anthEntry) {
             let newEntry = JSON.parse(JSON.stringify(entry));
             // Changing from a journal to conference
-            if (newEntry.entryType == 'article' && anthEntry.bibType == 'inproceedings') {
+            if (newEntry.entryType == "article" && anthEntry.bibType == "inproceedings") {
                 delete newEntry.entryTags.eprint;
                 delete newEntry.entryTags.eprinttype;
                 delete newEntry.entryTags.journaltitle;
                 delete newEntry.entryTags.journal;
             }
             // Other way around (less likely to see this?)
-            if (newEntry.entryType == 'inproceedings' && anthEntry.bibType == 'article') {
+            if (newEntry.entryType == "inproceedings" && anthEntry.bibType == "article") {
                 delete newEntry.entryTags.booktitle;
             }
-            if (anthEntry.bibType == 'article') {
-                if ('journaltitle' in newEntry.entryTags) {
+            if (anthEntry.bibType == "article") {
+                if ("journaltitle" in newEntry.entryTags) {
                     newEntry.entryTags.journaltitle = anthEntry.journal;
                     delete newEntry.entryTags.journal;
                 } else {
@@ -117,7 +115,7 @@ function convert() {
             newEntry.entryType = anthEntry.bibType;
             newEntry.entryTags.title = anthEntry.title;
 
-            if (anthEntry.bibType == 'inproceedings') {
+            if (anthEntry.bibType == "inproceedings") {
                 newEntry.entryTags.booktitle = anthEntry.booktitle;
             }
             for (let possTag of ["doi", "pages", "publisher", "pages"]) {
@@ -126,10 +124,10 @@ function convert() {
                 }
             }
 
-            for (const contributorType of ['author', 'editor']) {
+            for (const contributorType of ["author", "editor"]) {
                 if (contributorType in anthEntry.people) {
                     let contributors = anthEntry.people[contributorType].map(nameFromParts);
-                    let contributorsJoined = contributors.join(' and ');
+                    let contributorsJoined = contributors.join(" and ");
                     newEntry.entryTags[contributorType] = resolveAccents(contributorsJoined, newEntry.entryTags[contributorType]);
                 } else {
                     delete newEntry.entryTags[contributorType];
@@ -139,7 +137,7 @@ function convert() {
             if ("url" in anthEntry) {
                 newEntry.entryTags.url = anthEntry.url;
             } else {
-                if ('arxiv' in newEntry.entryTags.url.toLowerCase()) {
+                if ("arxiv" in newEntry.entryTags.url.toLowerCase()) {
                     delete newEntry.entryTags.url;
                 }
             }
@@ -191,31 +189,31 @@ function convert() {
     let ithChange = 1;
     for (let i = 0; i < translatedEntries.length; i++) {
         if (!_.isEqual(bibtexParsed[i], translatedEntries[i])) {
-            let parentElem = document.createElement('div');
-            parentElem.classList.add('col-lg-10');
-            parentElem.classList.add('offset-lg-1');
+            let parentElem = $(document.createElement("div"));
+            parentElem.addClass("col-lg-10");
+            parentElem.addClass("offset-lg-1");
             
             let changeNumDiv = changeIofN(ithChange, numChanges);
             parentElem.append(changeNumDiv);
             
             toDiffedBibtex(bibtexParsed[i], translatedEntries[i], parentElem);
 
-            let hr = document.createElement('hr');
-            hr.classList.add('result-divide');
-            parentElem.appendChild(hr);
+            let hr = $(document.createElement("hr"));
+            hr.addClass("result-divide");
+            parentElem.append(hr);
 
-            resultsArea.appendChild(parentElem);
+            $("#results-area").append(parentElem);
             ithChange += 1;
         }
     }
     if (numChanges > 0) {
-        $(".download-button").css({'display': ''});
-        $('hr.result-divide').last().remove();
+        $(".download-button").css({"display": ""});
+        $("hr.result-divide").last().remove();
     } else {
-        let noResultsElem = document.createElement('p');
-        noResultsElem.textContent = 'No changes found!';
-        noResultsElem.classList.add('no-changes')
-        resultsArea.appendChild(noResultsElem);
+        let noResultsElem = $(document.createElement("p"));
+        noResultsElem.textContent = "No changes found!";
+        noResultsElem.addClass("no-changes")
+        $("#results-area").append(noResultsElem);
     }
-    resultsArea.appendChild(document.createElement('hr'));
+    $("#results-area").append($(document.createElement("hr")));
 }
